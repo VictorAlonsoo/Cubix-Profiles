@@ -1,7 +1,7 @@
-title: "<bold><#FFFFFF>Profile: <#5AB0FF><player>"
+title: "<dark_gray><player>'s Profile"
 
 # Number of rows: 1-6 (default: 6 = 54 slots)
-rows: 6
+rows: 4
 
 # ──────────────────────────────────────────────
 #  Head slot — fully configurable like any other item.
@@ -16,14 +16,14 @@ rows: 6
 #  tooltip-style, hide-tooltip, lore, actions, sound.
 # ──────────────────────────────────────────────
 head:
-  slot: 4
+  slot: 12
   name: "<white><prefix><player>"
   # lore:
   #   - "<#A5ACB8>Click to inspect."
   # custom-model-data: 0
   # item-model: "namespace:path"
   # tooltip-style: "namespace:path"
-  # hide-tooltip: false
+  hide-tooltip: true
   # actions:
   #   - "[close]"
   # sound:
@@ -32,39 +32,26 @@ head:
   #   volume: 1.0
   #   pitch: 1.0
 
-# ──────────────────────────────────────────────
-#  Global click sound.
-#  Played whenever a player clicks a slot that contains an item.
-#  Per-item sound (see items: section) overrides this value.
-# ──────────────────────────────────────────────
 click-sound:
   enabled: true
   sound: "minecraft:ui.button.click"
   source: MASTER
-  volume: 0.3
+  volume: 0.4
   pitch: 1.0
 
 # Positions for the Minecraft equipment items.
 equipment-slots:
-  helmet:     13
-  mainHand:   20
-  chestplate: 22
-  offHand:    24
-  leggings:   31
-  boots:      40
+  helmet: 1
+  chestplate: 10
+  leggings: 19
+  boots: 28
 
 # Positions for cosmetic items.
-# Key format: <provider_prefix>_<SLOT_NAME>
-# HMCCosmetics prefix: hmcc_
 cosmetic-slots:
-  hmcc_HELMET:    5
-  hmcc_BACKPACK:  48
-  hmcc_BALLOON:   50
-  # hmcc_CHESTPLATE: ...
-  # hmcc_LEGGINGS:   ...
-  # hmcc_BOOTS:      ...
-  # hmcc_MAINHAND:   ...
-  # hmcc_OFFHAND:    ...
+  hmcc_HELMET: 0
+  hmcc_BACKPACK: 9
+  hmcc_OFFHAND: 18
+  hmcc_BALLOON: 27
 
 # ──────────────────────────────────────────────
 #  Custom items rendered inside the GUI.
@@ -98,37 +85,19 @@ cosmetic-slots:
 # ──────────────────────────────────────────────
 items:
 
-  filler:
+  info:
     enabled: true
-    slots: "0-53"
-    material: GRAY_STAINED_GLASS_PANE
-    name: " "
-    # lore: []
-    # custom-model-data: 0
-    # item-model: "minecraft:item/gray_stained_glass_pane"
-    # tooltip-style: "minecraft:default"
-    # hide-tooltip: false
-    # actions: []
-    # sound:
-    #   sound: "minecraft:ui.button.click"
-    #   source: MASTER
-    #   volume: 1.0
-    #   pitch: 1.0
+    slot: 4
+    material: WRITABLE_BOOK
+    name: "<white>Playtime: XX-XX hours"
+    lore:
+      - "<white>Join date: "
+      - "<white>Money: "
+      - "<white>Discord: "
+      - "<white>Logros puntos: "
 
-  # ── Example item with actions and custom sound — uncomment to activate ──
-  # info:
-  #   enabled: true
-  #   slot: 49
-  #   material: PAPER
-  #   name: "<bold><#FFFFFF><player>"
-  #   lore:
-  #     - "<#A5ACB8>Click to view <#5AB0FF><player><#A5ACB8>'s stats."
-  #   actions:
-  #     - "[player] stats <player>"
-  #     - "[message] <#A5ACB8>Opening stats for <#5AB0FF><player><#A5ACB8>..."
-  #     - "[close]"
-  #   sound:
-  #     sound: "minecraft:entity.experience_orb.pickup"
-  #     source: MASTER
-  #     volume: 1.0
-  #     pitch: 1.2
+  example_7:
+    enabled: true
+    slot: 31
+    material: SLIME_BALL
+    name: "<color:#83CA16>Currently online"

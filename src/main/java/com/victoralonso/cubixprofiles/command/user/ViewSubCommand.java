@@ -76,7 +76,10 @@ public final class ViewSubCommand implements SubCommand {
         PlayerProfile profile = Bukkit.createProfile(target.getUniqueId(), target.getName());
         profile.completeFromCache();
 
-        new ProfileMenu(snapshot, plugin.menuLayout(), plugin.itemFactory(),
+        boolean isSelf = viewer.getUniqueId().equals(target.getUniqueId());
+        var layout = isSelf ? plugin.selfMenuLayout() : plugin.otherMenuLayout();
+
+        new ProfileMenu(snapshot, layout, plugin.itemFactory(),
                 plugin.messages(), profile, viewer).open(viewer);
     }
 
@@ -115,7 +118,9 @@ public final class ViewSubCommand implements SubCommand {
                                   ProfileSnapshot snapshot, PlayerProfile profile) {
         runOnViewer(plugin, viewer, () -> {
             if (!viewer.isOnline()) return;
-            new ProfileMenu(snapshot, plugin.menuLayout(), plugin.itemFactory(),
+            boolean isSelf = viewer.getUniqueId().equals(snapshot.uniqueId());
+            var layout = isSelf ? plugin.selfMenuLayout() : plugin.otherMenuLayout();
+            new ProfileMenu(snapshot, layout, plugin.itemFactory(),
                     plugin.messages(), profile, viewer).open(viewer);
         });
     }

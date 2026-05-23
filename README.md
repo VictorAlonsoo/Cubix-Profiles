@@ -120,10 +120,6 @@ Detectado automáticamente si está instalado y `cosmetics.providers.hmccosmetic
 - Persiste los cosméticos en la tabla `profile_cosmetics` para mostrarlos en perfiles offline.
 - Los slots se configuran en `cosmetic-slots:` con el prefijo `hmcc_`.
 
-> `paper-plugin.yml` requiere `join-classpath: true` bajo `dependencies.server` para
-> que HMCCosmetics y PlaceholderAPI sean visibles en el classloader del plugin.
-> El listado en `softdepend:` no es suficiente.
-
 ---
 
 ## Storage
@@ -143,46 +139,6 @@ No se incluyen en el jar.
 
 Serialización: `ItemStack.serializeAsBytes()` / `deserializeBytes()` almacenado como `BLOB`.
 
----
-
-## Arquitectura
-
-```
-com.victoralonso.cubixprofiles
-├── CubixProfiles                   main — wiring de todos los managers
-├── command/
-│   └── ProfileCommand              /profile [player] | reload
-├── config/
-│   └── ConfigManager               acceso tipado a config.yml
-├── compatibility/
-│   └── CapabilityDetector          reflection al arranque — item-model, tooltip-style, hide-tooltip
-├── cosmetics/
-│   ├── CosmeticsProvider           interfaz — un proveedor por plugin externo
-│   ├── CosmeticsManager            registry + captureAll(Player)
-│   └── hmccosmetics/
-│       ├── HMCCosmeticsProvider    impl con HMCCosmetics API
-│       └── HMCCosmeticsListener    equip/unequip → profileService.capture()
-├── menu/
-│   ├── ProfileMenu                 InventoryHolder virtual + slotToConfig map
-│   ├── ItemFactory                 núcleo único de construcción de ItemStack
-│   ├── MenuLayout                  parsea menu.yml: title, size, slots, sonido global, ítems
-│   ├── MenuItemConfig              record — material, slots, nombre, lore, acciones, sonido
-│   ├── SoundConfig                 record — key, source, volume, pitch → Adventure Sound
-│   ├── ActionExecutor              ejecuta acciones [player]/[console]/[message]/[close]
-│   └── MenuListener                cancela interacción, reproduce sonido, ejecuta acciones
-├── message/
-│   └── MessageService              MiniMessage + multi-idioma + locale del jugador
-├── placeholder/
-│   └── CubixPlaceholderExpansion   integración PlaceholderAPI
-└── profile/
-    ├── ProfileSnapshot             record — uuid, username, 6 slots + cosmetics map
-    ├── ProfileService              cache (ConcurrentHashMap) + orquestación storage
-    ├── ProfileListener             join → capture, quit → saveAsync
-    └── storage/
-        ├── StorageManager          interfaz
-        ├── SQLiteStorage           backend SQLite
-        └── MySQLStorage            backend MySQL / MariaDB + HikariCP
-```
 
 ### Decisiones de diseño
 

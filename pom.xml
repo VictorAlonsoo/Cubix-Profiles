@@ -14,10 +14,10 @@
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <paper.api.version>1.21.11-R0.1-SNAPSHOT</paper.api.version>
-        <sqlite.version>3.49.1.0</sqlite.version>
-        <hikari.version>5.1.0</hikari.version>
-        <mysql.connector.version>9.2.0</mysql.connector.version>
-        <placeholderapi.version>2.11.6</placeholderapi.version>
+        <sqlite.version>3.53.0.0</sqlite.version>
+        <hikari.version>7.0.2</hikari.version>
+        <mysql.connector.version>9.7.0</mysql.connector.version>
+        <placeholderapi.version>2.12.2</placeholderapi.version>
         <hmccosmetics.version>2.9.0</hmccosmetics.version>
         <luckperms.version>5.4</luckperms.version>
         <vault.version>1.7.1</vault.version>

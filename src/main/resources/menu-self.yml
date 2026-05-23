@@ -1,0 +1,159 @@
+title: "<dark_gray>Your Profile"
+
+# Number of rows: 1-6 (default: 6 = 54 slots)
+rows: 4
+
+# ──────────────────────────────────────────────
+#  Head slot — your own skin.
+#
+#  Placeholders available in name/lore:
+#    <player>  — your own name
+#    <prefix>  — your rank prefix (LuckPerms or Vault)
+#    <viewer>  — always the same as <player> in this menu
+#    %papi%    — any PlaceholderAPI placeholder (resolved for you)
+# ──────────────────────────────────────────────
+head:
+  slot: 12
+  name: "<white><prefix><player>"
+  # lore:
+  #   - "<#A5ACB8>Click to inspect."
+  # custom-model-data: 0
+  # item-model: "namespace:path"
+  # tooltip-style: "namespace:path"
+  hide-tooltip: true
+  # actions:
+  #   - "[close]"
+  # sound:
+  #   sound: "minecraft:ui.button.click"
+  #   source: MASTER
+  #   volume: 1.0
+  #   pitch: 1.0
+
+click-sound:
+  enabled: true
+  sound: "minecraft:ui.button.click"
+  source: MASTER
+  volume: 0.4
+  pitch: 1.0
+
+# Positions for the Minecraft equipment items.
+equipment-slots:
+  helmet: 1
+  chestplate: 10
+  leggings: 19
+  boots: 28
+
+# Positions for cosmetic items.
+cosmetic-slots:
+  hmcc_HELMET: 0
+  hmcc_BACKPACK: 9
+  hmcc_OFFHAND: 18
+  hmcc_BALLOON: 27
+
+# ──────────────────────────────────────────────
+#  Custom items rendered inside the GUI.
+#
+#  Fields:
+#    enabled:           true | false  (default: true)
+#    slot:              single slot   (0 – size-1)
+#    slots:             "0-53"  |  "0,1,2"  |  [0, 1, 2]
+#    material:          BUKKIT material name  ← required
+#    name:              MiniMessage string    ← required
+#    lore:              list of MiniMessage lines
+#    custom-model-data: integer
+#    item-model:        "namespace:path"
+#    tooltip-style:     "namespace:path"
+#    hide-tooltip:      true | false  (default: false)
+#
+#  Actions (executed on click):
+#    actions:
+#      - "[player]  <command>"   — viewer runs a command (no slash)
+#      - "[console] <command>"   — console runs a command
+#      - "[message] <text>"      — sends a MiniMessage message to the viewer
+#      - "[close]"               — closes the inventory
+#    Placeholders: <player>, <prefix>, <viewer>, %papi%
+#
+#  Per-item sound (overrides click-sound for this item only):
+#    sound:
+#      sound:  "namespace:key"
+#      source: MASTER
+#      volume: 1.0
+#      pitch:  1.0
+# ──────────────────────────────────────────────
+items:
+
+  info:
+    enabled: true
+    slot: 4
+    material: WRITABLE_BOOK
+    name: "<white>Playtime: XX-XX hours"
+    lore:
+      - "<white>Join date: "
+      - "<white>Money: "
+      - "<white>Discord: "
+      - "<white>Logros puntos: "
+
+  example_1:
+    enabled: true
+    slots: "5,6,14,15"
+    material: LIGHT_BLUE_STAINED_GLASS_PANE
+    name: "<white>Teleport to your Realm"
+
+  example_2:
+    enabled: true
+    slots: "7,8,16,17"
+    material: LIME_STAINED_GLASS_PANE
+    name: "<white>Open World"
+    lore:
+      - "<color:#83CA16> Left-click to teleport"
+      - "<color:#0097D8> Right-click to view all worlds"
+
+  example_3:
+    enabled: true
+    slots: "23,24"
+    material: ORANGE_STAINED_GLASS_PANE
+    name: "<white>Homes"
+
+  example_4:
+    enabled: true
+    slots: "25,26"
+    material: RED_STAINED_GLASS_PANE
+    name: "<white>Teleport to spawn"
+
+  example_5:
+    enabled: true
+    slot: 34
+    material: SKELETON_SKULL
+    name: "<color:#A5ACB8>Gravestones"
+
+  example_6:
+    enabled: true
+    slot: 35
+    material: COMPARATOR
+    name: "<color:#A5ACB8>Player settings"
+
+  example_7:
+    enabled: true
+    slot: 31
+    material: SLIME_BALL
+    name: "<color:#83CA16>Currently online"
+
+  # ── Settings button — shows your current visibility and lets you toggle it ──
+  # Uncomment to activate.
+  # settings:
+  #   enabled: true
+  #   slot: 49
+  #   material: COMPARATOR
+  #   name: "<bold><#FFFFFF>Settings"
+  #   lore:
+  #     - "<#A5ACB8>Profile visibility: <#5AB0FF>%cubixprofiles_view_status%"
+  #     - ""
+  #     - "<#A5ACB8>Click to toggle."
+  #   actions:
+  #     - "[player] profile settings view"
+  #     - "[close]"
+  #   sound:
+  #     sound: "minecraft:ui.button.click"
+  #     source: MASTER
+  #     volume: 1.0
+  #     pitch: 1.2

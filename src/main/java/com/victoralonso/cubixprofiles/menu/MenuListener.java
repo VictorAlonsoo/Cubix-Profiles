@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class MenuListener implements Listener {
 
-    private static final long SOUND_COOLDOWN_MS = 500L;
+    private static final long SOUND_COOLDOWN_MS = 200L;
 
     private final CubixProfiles plugin;
     // Per-player timestamp of the last sound played — used to enforce the cooldown.

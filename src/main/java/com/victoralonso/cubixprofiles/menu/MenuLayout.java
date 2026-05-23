@@ -23,10 +23,32 @@ public final class MenuLayout {
     private final List<MenuItemConfig> items = new ArrayList<>();
     private final @Nullable SoundConfig globalClickSound;
 
-    public MenuLayout(JavaPlugin plugin) {
-        var file = new File(plugin.getDataFolder(), "menu.yml");
-        if (!file.exists()) plugin.saveResource("menu.yml", false);
-        var cfg = YamlConfiguration.loadConfiguration(file);
+    /**
+     * Loads a menu layout from the given filename inside the plugin data folder.
+     *
+     * <p>Resolution order:
+     * <ol>
+     *   <li>{@code <dataFolder>/filename} — user-edited file</li>
+     *   <li>Bundled resource {@code filename} — copied on first run</li>
+     *   <li>Migration fallback: if {@code filename} is {@code "menu-other.yml"} and
+     *       {@code menu.yml} exists on disk, that file is used instead</li>
+     *   <li>Empty config — all defaults apply</li>
+     * </ol>
+     */
+    public MenuLayout(JavaPlugin plugin, String filename) {
+        var file = new File(plugin.getDataFolder(), filename);
+        if (!file.exists()) {
+            if (plugin.getResource(filename) != null) {
+                plugin.saveResource(filename, false);
+            } else if ("menu-other.yml".equals(filename)) {
+                // Migration: servers that upgraded from a version using menu.yml
+                var legacy = new File(plugin.getDataFolder(), "menu.yml");
+                if (legacy.exists()) file = legacy;
+            }
+        }
+        var cfg = file.exists()
+                ? YamlConfiguration.loadConfiguration(file)
+                : new YamlConfiguration();
 
         titleRaw = cfg.getString("title", "<bold><#FFFFFF>Profile: <#5AB0FF><player>");
 
@@ -55,6 +77,11 @@ public final class MenuLayout {
                 if (item != null) items.add(item);
             }
         }
+    }
+
+    /** Convenience overload — loads {@code menu.yml} (backward-compat). */
+    public MenuLayout(JavaPlugin plugin) {
+        this(plugin, "menu.yml");
     }
 
     // ---- slot map loading ----

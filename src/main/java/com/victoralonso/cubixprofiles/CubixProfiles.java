@@ -41,7 +41,8 @@ public final class CubixProfiles extends JavaPlugin {
     private ProfileService profileService;
     private SettingsService settingsService;
     private CapabilityDetector caps;
-    private MenuLayout menuLayout;
+    private MenuLayout selfMenuLayout;
+    private MenuLayout otherMenuLayout;
     private ItemFactory itemFactory;
 
     private BukkitTask updateTask;
@@ -77,9 +78,10 @@ public final class CubixProfiles extends JavaPlugin {
                 new ProfileListener(profileService, settingsService), this);
 
         // GUI
-        caps        = new CapabilityDetector();
-        menuLayout  = new MenuLayout(this);
-        itemFactory = new ItemFactory(caps);
+        caps             = new CapabilityDetector();
+        selfMenuLayout   = new MenuLayout(this, "menu-self.yml");
+        otherMenuLayout  = new MenuLayout(this, "menu-other.yml");
+        itemFactory      = new ItemFactory(caps);
         getServer().getPluginManager().registerEvents(new MenuListener(this), this);
 
         // Command — registered once; reads live config via plugin getters on each call
@@ -118,8 +120,9 @@ public final class CubixProfiles extends JavaPlugin {
     public void reload() {
         reloadConfig();
         configManager.reload();
-        messages   = new MessageService(this, configManager.language());
-        menuLayout = new MenuLayout(this);
+        messages        = new MessageService(this, configManager.language());
+        selfMenuLayout  = new MenuLayout(this, "menu-self.yml");
+        otherMenuLayout = new MenuLayout(this, "menu-other.yml");
 
         // Close existing LP subscription before re-registering providers
         if (lpSubscription != null) { lpSubscription.close(); lpSubscription = null; }
@@ -176,7 +179,8 @@ public final class CubixProfiles extends JavaPlugin {
     public SettingsService settingsService()    { return settingsService; }
     public CosmeticsManager cosmeticsManager()  { return cosmeticsManager; }
     public RankManager     rankManager()        { return rankManager; }
-    public CapabilityDetector caps()            { return caps; }
-    public MenuLayout      menuLayout()         { return menuLayout; }
+    public CapabilityDetector caps()             { return caps; }
+    public MenuLayout      selfMenuLayout()     { return selfMenuLayout; }
+    public MenuLayout      otherMenuLayout()    { return otherMenuLayout; }
     public ItemFactory     itemFactory()        { return itemFactory; }
 }
