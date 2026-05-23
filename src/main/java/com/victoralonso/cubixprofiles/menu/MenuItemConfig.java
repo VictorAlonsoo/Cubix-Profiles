@@ -21,5 +21,6 @@ public record MenuItemConfig(
         String tooltipStyle,    // null = not set
         boolean hideTooltip,
         List<String> actions,   // action strings; empty = no actions
-        @Nullable SoundConfig sound  // null = inherit global click-sound
+        @Nullable SoundConfig sound,  // null = inherit global click-sound
+        @Nullable String texture      // null = no custom skull texture; base64 value from minecraft-heads.com
 ) {}

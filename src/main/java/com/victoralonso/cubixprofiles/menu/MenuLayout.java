@@ -103,8 +103,13 @@ public final class MenuLayout {
         if (slotList.isEmpty()) slotList = List.of(4);
 
         String matName = sec.getString("material", "PLAYER_HEAD");
-        Material material = Material.matchMaterial(matName);
-        if (material == null) material = Material.AIR;
+        Material material;
+        if ("CUSTOM_HEAD".equalsIgnoreCase(matName)) {
+            material = Material.PLAYER_HEAD;
+        } else {
+            material = Material.matchMaterial(matName);
+            if (material == null) material = Material.AIR;
+        }
 
         return new MenuItemConfig(
                 id, enabled, slotList, material,
@@ -115,7 +120,8 @@ public final class MenuLayout {
                 sec.getString("tooltip-style", null),
                 sec.getBoolean("hide-tooltip", false),
                 sec.getStringList("actions"),
-                parseSoundConfig(sec.getConfigurationSection("sound"), false)
+                parseSoundConfig(sec.getConfigurationSection("sound"), false),
+                sec.getString("texture", null)
         );
     }
 
@@ -193,7 +199,7 @@ public final class MenuLayout {
         return new MenuItemConfig(
                 "head", true, List.of(4), Material.PLAYER_HEAD,
                 "<white><prefix><player>", List.of(),
-                0, null, null, false, List.of(), null
+                0, null, null, false, List.of(), null, null
         );
     }
 

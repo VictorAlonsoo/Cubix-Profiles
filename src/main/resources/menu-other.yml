@@ -1,4 +1,4 @@
-title: "<dark_gray><player>'s Profile"
+title: "<bold><#FFFFFF>Profile: <#5AB0FF><player>"
 
 # Number of rows: 1-6 (default: 6 = 54 slots)
 rows: 4
@@ -6,32 +6,29 @@ rows: 4
 # ──────────────────────────────────────────────
 #  Head slot — fully configurable like any other item.
 #
-#  Placeholders available in name/lore:
-#    <player>  — profile owner's name
+#  Placeholders available in name/lore/actions:
+#    <player>  — profile owner's name  ← THIS is the target being viewed
 #    <prefix>  — rank prefix (may contain MiniMessage tags; LuckPerms or Vault)
-#    <viewer>  — player viewing the GUI
+#    <viewer>  — player who opened the GUI
 #    %papi%    — any PlaceholderAPI placeholder (resolved for the viewer)
 #
-#  All standard item fields apply: custom-model-data, item-model,
-#  tooltip-style, hide-tooltip, lore, actions, sound.
+#  All standard item fields apply: material, texture, custom-model-data,
+#  item-model, tooltip-style, hide-tooltip, lore, actions, sound.
 # ──────────────────────────────────────────────
 head:
   slot: 12
   name: "<white><prefix><player>"
   # lore:
-  #   - "<#A5ACB8>Click to inspect."
-  # custom-model-data: 0
-  # item-model: "namespace:path"
-  # tooltip-style: "namespace:path"
+  #   - "<#A5ACB8>Viewing <#5AB0FF><player><#A5ACB8>'s profile."
+  #   - "<#A5ACB8>Opened by <#5AB0FF><viewer>"
   hide-tooltip: true
   # actions:
   #   - "[close]"
-  # sound:
-  #   sound: "minecraft:ui.button.click"
-  #   source: MASTER
-  #   volume: 1.0
-  #   pitch: 1.0
 
+# ──────────────────────────────────────────────
+#  Global click sound.
+#  Per-item sound (see items: section) overrides this.
+# ──────────────────────────────────────────────
 click-sound:
   enabled: true
   sound: "minecraft:ui.button.click"
@@ -41,17 +38,17 @@ click-sound:
 
 # Positions for the Minecraft equipment items.
 equipment-slots:
-  helmet: 1
+  helmet:     1
   chestplate: 10
-  leggings: 19
-  boots: 28
+  leggings:   19
+  boots:      28
 
 # Positions for cosmetic items.
 cosmetic-slots:
-  hmcc_HELMET: 0
+  hmcc_HELMET:   0
   hmcc_BACKPACK: 9
-  hmcc_OFFHAND: 18
-  hmcc_BALLOON: 27
+  hmcc_OFFHAND:  18
+  hmcc_BALLOON:  27
 
 # ──────────────────────────────────────────────
 #  Custom items rendered inside the GUI.
@@ -59,8 +56,9 @@ cosmetic-slots:
 #  Fields:
 #    enabled:           true | false  (default: true)
 #    slot:              single slot   (0 – size-1)
-#    slots:             "0-53"  |  "0,1,2"  |  [0, 1, 2]
+#    slots:             "0-35"  |  "0,1,2"  |  [0, 1, 2]
 #    material:          BUKKIT material name  ← required
+#    texture:           base64 value from minecraft-heads.com  ← only with PLAYER_HEAD / CUSTOM_HEAD
 #    name:              MiniMessage string    ← required
 #    lore:              list of MiniMessage lines
 #    custom-model-data: integer
@@ -68,13 +66,12 @@ cosmetic-slots:
 #    tooltip-style:     "namespace:path"
 #    hide-tooltip:      true | false  (default: false)
 #
-#  Actions (executed on click):
+#  Actions (executed on click — <player> = target, <viewer> = who clicked):
 #    actions:
 #      - "[player]  <command>"   — viewer runs a command (no slash)
 #      - "[console] <command>"   — console runs a command
 #      - "[message] <text>"      — sends a MiniMessage message to the viewer
 #      - "[close]"               — closes the inventory
-#    Placeholders: <player>, <prefix>, <viewer>, %papi%
 #
 #  Per-item sound (overrides click-sound for this item only):
 #    sound:
@@ -85,19 +82,57 @@ cosmetic-slots:
 # ──────────────────────────────────────────────
 items:
 
-  info:
+  filler:
     enabled: true
-    slot: 4
-    material: WRITABLE_BOOK
-    name: "<white>Playtime: XX-XX hours"
-    lore:
-      - "<white>Join date: "
-      - "<white>Money: "
-      - "<white>Discord: "
-      - "<white>Logros puntos: "
+    slots: "0-35"
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
 
-  example_7:
+  # ── Teleport button — <player> resolves to the profile owner (target) ──
+  teleport:
     enabled: true
     slot: 31
-    material: SLIME_BALL
-    name: "<color:#83CA16>Currently online"
+    material: ENDER_PEARL
+    name: "<bold><#FFFFFF>Teleport"
+    lore:
+      - "<#A5ACB8>Click to teleport to <#5AB0FF><player><#A5ACB8>."
+    actions:
+      - "[player] /tp <player>"
+      - "[message] <#83CA16>Message sent to <#5AB0FF><player><#83CA16>."
+      - "[close]"
+    sound:
+      sound: "minecraft:entity.enderman.teleport"
+      source: MASTER
+      volume: 1.0
+      pitch: 1.0
+
+  example_custom_head:
+    slot: 32
+    material: CUSTOM_HEAD
+    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTA5Y2RlMWFmYzk1YTQ3NGQyMjI1NTQwOTdlZDZkMzkxZTdjYzdhZTFmMjAyZmRiZmQyZDZkYmM5ODMwOTM3MCJ9fX0="
+    name: "<white>My Button"
+
+  # ── Message example — shows both <player> (target) and <viewer> (who clicked) ──
+  # send_message:
+  #   enabled: true
+  #   slot: 22
+  #   material: PAPER
+  #   name: "<bold><#FFFFFF>Send Message"
+  #   lore:
+  #     - "<#A5ACB8>Notify <#5AB0FF><player><#A5ACB8> that you viewed their profile."
+  #   actions:
+  #     - "[console] msg <player> <viewer> just viewed your profile!"
+  #     - "[message] <#83CA16>Message sent to <#5AB0FF><player><#83CA16>."
+  #     - "[close]"
+
+  # ── Custom head example — get the texture value from minecraft-heads.com ──
+  #    Go to a head → click "For Developers" → copy the "Value" field.
+  #    material: CUSTOM_HEAD  is an alias for PLAYER_HEAD that signals a texture is required.
+  # custom_head:
+  #   enabled: true
+  #   slot: 4
+  #   material: CUSTOM_HEAD
+  #   texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTA5Y2RlMWFmYzk1YTQ3NGQyMjI1NTQwOTdlZDZkMzkxZTdjYzdhZTFmMjAyZmRiZmQyZDZkYmM5ODMwOTM3MCJ9fX0="
+  #   name: "<#5AB0FF><player><white>'s Statistics"
+  #   lore:
+  #     - "<#A5ACB8>Viewer: <#5AB0FF><viewer>"

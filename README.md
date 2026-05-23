@@ -1,153 +1,202 @@
 # CubixProfiles
 
-Visor de perfiles de jugador virtual para Paper. Muestra el equipamiento y los
-cosméticos equipados de jugadores online y offline en una GUI configurable.
-Minimalista por diseño: sin estadísticas, sin inventario completo, sin
-sincronización agresiva.
+Plugin de perfiles para Paper. Muestra el equipamiento y los cosméticos equipados de cualquier jugador — online u offline — en una GUI configurable. Sin estadísticas, sin inventario completo.
+
+**Requisitos:** Paper 1.21.4+ · Java 21
 
 ---
 
-## Stack
+## Comandos
 
-| | |
+| Comando | Descripción | Permiso |
+|---|---|---|
+| `/profile` | Abre tu propio perfil | `cubixprofiles.profile` |
+| `/profile <jugador>` | Abre el perfil de otro jugador | `cubixprofiles.profile` |
+| `/profile settings view` | Activa / desactiva la visibilidad de tu perfil | `cubixprofiles.settings` |
+| `/profile reload` | Recarga configuración y menús | `cubixprofiles.admin.reload` |
+
+Los admins con `cubixprofiles.admin.bypass` pueden ver perfiles ocultos y usar `/profile` en mundos restringidos.
+
+---
+
+## Dos menús independientes
+
+| Archivo | Se abre cuando… |
 |---|---|
-| Servidor objetivo | Paper 1.21.4 – 26.x |
-| API de compilación | Paper 1.21.11 |
-| Java | 21 |
-| Build | Maven |
-| groupId | `com.victoralonso` |
-| artifactId | `cubixprofiles` |
+| `menu-self.yml` | usas `/profile` sin argumentos |
+| `menu-other.yml` | usas `/profile <jugador>` |
 
-Compatibilidad multiversión mediante `CapabilityDetector`: features nuevas
-(`item-model`, `tooltip-style`, `hide-tooltip`) se detectan por reflection al
-arranque. Fallback silencioso si no existen.
+Cada archivo tiene su propio título, número de filas, slots de equipamiento, ítems y acciones. Cambias uno sin afectar el otro.
 
 ---
 
-## Comandos y permisos
+## Qué muestra el perfil
 
-| Comando | Descripción | Permiso | Default |
-|---|---|---|---|
-| `/profile` | Abre tu propio perfil | `cubixprofiles.profile` | todos |
-| `/profile <jugador>` | Abre el perfil de otro jugador (online u offline) | `cubixprofiles.profile` | todos |
-| `/profile reload` | Recarga config, mensajes y layout del menú | `cubixprofiles.reload` | op |
+- **Equipamiento** — casco, peto, grebas, botas, mano principal, mano secundaria
+- **Cosméticos** — integración con HMCCosmetics (opcional)
+- **Prefix de rango** — integración con LuckPerms o Vault (opcional)
+- Funciona con jugadores **offline** — los datos se persisten en la base de datos
 
 ---
 
-## Ítems del menú — acciones y sonido
+## Personalización del menú
 
-Cada ítem declarado en la sección `items:` de `menu.yml` puede tener acciones
-ejecutables al hacer clic y un sonido personalizado.
-
-### Acciones
-
+### Número de filas
 ```yaml
-actions:
-  - "[player]  <command>"   # el viewer ejecuta un comando (sin /)
-  - "[console] <command>"   # la consola ejecuta un comando
-  - "[message] <text>"      # envía texto MiniMessage al viewer
-  - "[close]"               # cierra el inventario
+rows: 4   # 1–6 filas (9–54 slots)
 ```
 
-**Placeholders disponibles en acciones:**
-
-| Placeholder | Resuelve a |
-|---|---|
-| `<player>` | username del dueño del perfil |
-| `<viewer>` | username del jugador que hace clic |
-| `%papi%` | cualquier placeholder de PlaceholderAPI, evaluado para el viewer |
-
-### Sonido de clic
-
-Se configura a dos niveles:
-
-- **Global** (`click-sound:` en `menu.yml`): se reproduce en cualquier slot que
-  contenga un ítem. Si `enabled: false`, no se reproduce ningún sonido por defecto.
-- **Por ítem** (`sound:` dentro de cada ítem): sobreescribe el sonido global para
-  ese ítem concreto.
-
+### Head configurable
 ```yaml
-# Global
-click-sound:
-  enabled: true
-  sound: "minecraft:ui.button.click"  # vanilla o resource pack
-  source: MASTER  # MASTER | MUSIC | RECORD | WEATHER | BLOCK | HOSTILE | NEUTRAL | PLAYER | AMBIENT | VOICE
-  volume: 1.0
-  pitch: 1.0
+head:
+  slot: 4
+  name: "<white><prefix><player>"
+  lore:
+    - "<#A5ACB8>Viewing <#5AB0FF><player>"
+  hide-tooltip: true
+```
 
-# Por ítem
+### Ítems personalizados
+```yaml
 items:
-  info:
-    slot: 49
+  filler:
+    slots: "0-35"
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+
+  my_button:
+    slot: 31
     material: COMPASS
-    name: "<#FFFFFF>Stats"
-    sound:
-      sound: "minecraft:entity.experience_orb.pickup"
-      source: MASTER
-      volume: 1.0
-      pitch: 1.2
+    name: "<bold><#FFFFFF>Stats"
+    lore:
+      - "<#A5ACB8>Click to view stats."
     actions:
       - "[player] stats <player>"
       - "[close]"
 ```
 
-El campo `source` controla qué control de volumen del cliente afecta al sonido,
-lo que lo hace compatible con cambios futuros de versión y con resource packs que
-redefinan las categorías.
+### Texture heads (minecraft-heads.com)
+```yaml
+  my_head:
+    slot: 4
+    material: CUSTOM_HEAD
+    texture: "eyJ0ZXh0dXJlcyI6..."   # campo "Value" de minecraft-heads.com
+    name: "<#5AB0FF><player>'s Profile"
+```
+
+---
+
+## Acciones en ítems
+
+Las acciones se ejecutan cuando el jugador hace clic en el ítem.
+
+| Tipo | Comportamiento |
+|---|---|
+| `[player] <comando>` | el viewer ejecuta el comando (sin `/`) |
+| `[console] <comando>` | la consola ejecuta el comando |
+| `[message] <texto>` | envía un mensaje MiniMessage al viewer |
+| `[close]` | cierra el inventario |
+
+**Placeholders disponibles en acciones y en name/lore:**
+
+| Placeholder | Valor |
+|---|---|
+| `<player>` | nombre del dueño del perfil (el **target** en `menu-other.yml`) |
+| `<viewer>` | nombre del jugador que abrió el menú |
+| `<prefix>` | prefix del dueño del perfil |
+| `%papi%` | cualquier placeholder de PlaceholderAPI |
+
+Ejemplo — botón de teleport en `menu-other.yml`:
+```yaml
+  teleport:
+    slot: 31
+    material: ENDER_PEARL
+    name: "<bold><#FFFFFF>Teleport"
+    actions:
+      - "[player] tp <player>"   # <player> = el target que estás viendo
+      - "[close]"
+```
+
+---
+
+## Sonidos
+
+```yaml
+# Sonido global (cualquier clic con ítem)
+click-sound:
+  enabled: true
+  sound: "minecraft:ui.button.click"
+  source: MASTER
+  volume: 1.0
+  pitch: 1.0
+
+# Sonido por ítem (sobreescribe el global)
+items:
+  my_button:
+    slot: 49
+    material: PAPER
+    name: "..."
+    sound:
+      sound: "minecraft:entity.experience_orb.pickup"
+      source: MASTER
+      volume: 1.0
+      pitch: 1.2
+```
+
+---
+
+## PlaceholderAPI
+
+Registra la expansión `cubixprofiles` automáticamente si PAPI está instalado.
+
+| Placeholder | Valor |
+|---|---|
+| `%cubixprofiles_helmet%` | material del casco (`DIAMOND_HELMET` / `none`) |
+| `%cubixprofiles_chestplate%` | material del peto |
+| `%cubixprofiles_leggings%` | material de las grebas |
+| `%cubixprofiles_boots%` | material de las botas |
+| `%cubixprofiles_mainhand%` | material en mano principal |
+| `%cubixprofiles_offhand%` | material en mano secundaria |
+| `%cubixprofiles_view_status%` | `true` si el perfil es visible, `false` si está oculto |
 
 ---
 
 ## Integraciones opcionales
 
-### PlaceholderAPI
-Detectado automáticamente al arranque. Registra la expansión `cubixprofiles`.
-
-| Placeholder | Valor |
+| Plugin | Qué aporta |
 |---|---|
-| `%cubixprofiles_helmet%` | Material del casco |
-| `%cubixprofiles_chestplate%` | Material del peto |
-| `%cubixprofiles_leggings%` | Material de las grebas |
-| `%cubixprofiles_boots%` | Material de las botas |
-| `%cubixprofiles_mainhand%` | Material en mano principal |
-| `%cubixprofiles_offhand%` | Material en mano secundaria |
-
-PlaceholderAPI también se resuelve en las acciones de los ítems del menú
-(cualquier `%placeholder%` se evalúa para el jugador que hace clic).
-
-### HMCCosmetics
-Detectado automáticamente si está instalado y `cosmetics.providers.hmccosmetics.enabled: true`.
-- Captura los cosméticos equipados al entrar, al equipar/desquitar y cada `update-interval`.
-- Persiste los cosméticos en la tabla `profile_cosmetics` para mostrarlos en perfiles offline.
-- Los slots se configuran en `cosmetic-slots:` con el prefijo `hmcc_`.
+| **LuckPerms** | Prefix del rango en `<prefix>`. Se actualiza automáticamente al cambiar el rango. |
+| **Vault** | Prefix del rango si LuckPerms no está instalado. |
+| **HMCCosmetics** | Muestra los cosméticos equipados. Los slots se configuran con el prefijo `hmcc_`. |
+| **PlaceholderAPI** | Ver tabla anterior. |
 
 ---
 
 ## Storage
 
-| Backend | Driver | Activación |
-|---|---|---|
-| SQLite | `org.xerial:sqlite-jdbc` | `storage.type: sqlite` (default) |
-| MySQL / MariaDB | `com.mysql:mysql-connector-j` + HikariCP | `storage.type: mysql` |
+```yaml
+storage:
+  type: sqlite   # sqlite | mysql
+  sqlite:
+    file: data/profiles.db
+  mysql:
+    host: localhost
+    port: 3306
+    database: cubix
+    username: root
+    password: ""
+```
 
-Los drivers los descarga Paper en runtime (`libraries:` en `paper-plugin.yml`).
-No se incluyen en el jar.
+SQLite crea el archivo automáticamente. MySQL requiere la base de datos creada previamente; las tablas se generan solas.
 
-**Tablas:**
-- `profiles` — snapshot de equipamiento por UUID + username.
-- `profile_cosmetics` — cosmético por UUID + slot (`PRIMARY KEY (uuid, slot)`).
-  Extensible sin `ALTER TABLE` al añadir nuevos proveedores.
+---
 
-Serialización: `ItemStack.serializeAsBytes()` / `deserializeBytes()` almacenado como `BLOB`.
+## Mundos restringidos
 
+```yaml
+disabled-worlds:
+  - world_nether
+  - world_the_end
+```
 
-### Decisiones de diseño
-
-- `ProfileSnapshot.of(Player)` no accede a cosméticos. Usar siempre
-  `profileService.capture(player)` para snapshots completos.
-- `PlayerProfile` (skin) no entra en el record. Se resuelve en render, async si es offline.
-- El GUI es estático: se construye una vez al abrir. El refresh es manual
-  (`/profile`) o por `update-interval`, nunca por tick.
-- Los sonidos se reproducen solo si el slot contiene un ítem real (no slots vacíos).
-- Acciones de tipo `[player]` y `[console]` se despachan en el siguiente tick para
-  evitar conflictos con el estado del inventario dentro del evento cancelado.
-- `CosmeticsProvider` permite añadir futuros plugins sin tocar el código base.
+En estos mundos `/profile` está desactivado para jugadores sin `cubixprofiles.admin.bypass`.

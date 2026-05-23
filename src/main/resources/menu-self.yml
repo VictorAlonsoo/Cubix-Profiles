@@ -138,6 +138,12 @@ items:
     material: SLIME_BALL
     name: "<color:#83CA16>Currently online"
 
+  example_custom_head:
+    slot: 32
+    material: CUSTOM_HEAD
+    texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMTA5Y2RlMWFmYzk1YTQ3NGQyMjI1NTQwOTdlZDZkMzkxZTdjYzdhZTFmMjAyZmRiZmQyZDZkYmM5ODMwOTM3MCJ9fX0="
+    name: "<white>My Button"
+
   # ── Settings button — shows your current visibility and lets you toggle it ──
   # Uncomment to activate.
   # settings:
