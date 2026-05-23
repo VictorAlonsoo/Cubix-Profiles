@@ -1,0 +1,67 @@
+═══════════════════════════════════════════════════════════════
+  CubixProfiles — Placeholder Reference
+  Identifier: cubixprofiles
+  Usage: %cubixprofiles_<placeholder>%
+═══════════════════════════════════════════════════════════════
+
+Requires: PlaceholderAPI (soft dependency)
+All placeholders are resolved against the requested player's UUID.
+
+───────────────────────────────────────────────────────────────
+  SECTION 1 — EQUIPMENT
+  Source: ProfileSnapshot (in-memory snapshot cache)
+  Returns "" if the player has no cached snapshot (never joined
+  since last restart or cache was not loaded).
+  Returns "none" if the slot is empty.
+  Values are Bukkit material names in lowercase (e.g. "diamond_sword").
+───────────────────────────────────────────────────────────────
+
+  %cubixprofiles_helmet%         Helmet slot
+  %cubixprofiles_chestplate%     Chestplate slot
+  %cubixprofiles_leggings%       Leggings slot
+  %cubixprofiles_boots%          Boots slot
+  %cubixprofiles_mainhand%       Main-hand slot
+  %cubixprofiles_offhand%        Off-hand slot
+
+───────────────────────────────────────────────────────────────
+  SECTION 2 — SETTINGS
+  Source: SettingsService (loaded from DB on player join, cached)
+  Returns the player's own setting value.
+  Falls back to the default (true = visible) for players whose
+  settings have not been loaded yet.
+───────────────────────────────────────────────────────────────
+
+  %cubixprofiles_view_status%    "true"  → profile is visible to others
+                                 "false" → profile is hidden
+
+───────────────────────────────────────────────────────────────
+  SECTION 3 — MENU ITEM PLACEHOLDERS (menu.yml / config only)
+  These are MiniMessage placeholders resolved inside the profile
+  GUI. They are NOT PlaceholderAPI placeholders — they work in
+  the name: and lore: fields of items defined in menu.yml.
+───────────────────────────────────────────────────────────────
+
+  <player>     Name of the player whose profile is being viewed
+  <prefix>     Rank prefix of the profile owner (MiniMessage tags
+               are interpreted — e.g. LuckPerms color codes)
+  <viewer>     Name of the player who opened the GUI
+  %papi%       Any PlaceholderAPI placeholder — resolved for the
+               viewer (the player looking at the profile), not
+               the profile owner
+
+───────────────────────────────────────────────────────────────
+  NOTES
+───────────────────────────────────────────────────────────────
+
+- Equipment placeholders only reflect the last captured snapshot.
+  Snapshots are refreshed on join, on rank change (LuckPerms), on
+  HMCCosmetics equip/unequip, and on the configured update-interval.
+
+- <prefix> in menu.yml is parsed as MiniMessage, so any formatting
+  codes stored by LuckPerms / Vault (e.g. <red>, <bold>) are applied.
+
+- %papi% in menu.yml item names/lore is pre-processed before
+  MiniMessage parsing, so you can combine PAPI and MiniMessage:
+    name: "<#A5ACB8>%player_displayname% (<viewer>)"
+
+═══════════════════════════════════════════════════════════════
