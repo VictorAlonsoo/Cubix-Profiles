@@ -17,7 +17,7 @@ public final class MenuLayout {
 
     private final String titleRaw;
     private final int size;
-    private final int headSlot;
+    private final MenuItemConfig headConfig;
     private final Map<String, Integer> equipmentSlots = new HashMap<>();
     private final Map<String, Integer> cosmeticSlots  = new HashMap<>();
     private final List<MenuItemConfig> items = new ArrayList<>();
@@ -29,8 +29,17 @@ public final class MenuLayout {
         var cfg = YamlConfiguration.loadConfiguration(file);
 
         titleRaw = cfg.getString("title", "<bold><#FFFFFF>Profile: <#5AB0FF><player>");
-        size     = cfg.getInt("size", 54);
-        headSlot = cfg.getInt("head-slot", 4);
+
+        // rows: 1-6 (default 6) replaces size:
+        int rows = cfg.getInt("rows", 6);
+        rows     = Math.max(1, Math.min(6, rows));
+        size     = rows * 9;
+
+        // Head item — fully configurable like any other item
+        var headSec = cfg.getConfigurationSection("head");
+        headConfig  = headSec != null ? parseItem("head", headSec) : null;
+        // null means section was missing or malformed; use inline default
+        // Callers should call headConfig() which returns the resolved value below.
 
         loadSlotMap(cfg.getConfigurationSection("equipment-slots"), equipmentSlots);
         loadSlotMap(cfg.getConfigurationSection("cosmetic-slots"),  cosmeticSlots);
@@ -59,12 +68,14 @@ public final class MenuLayout {
 
     // ---- item parsing ----
 
-    private MenuItemConfig parseItem(String id, ConfigurationSection sec) {
+    private @Nullable MenuItemConfig parseItem(String id, ConfigurationSection sec) {
         boolean enabled = sec.getBoolean("enabled", true);
         List<Integer> slotList = parseSlots(sec);
-        if (slotList.isEmpty()) return null;
+        // For head, an empty slot list is OK — head always falls back to slot 4
+        if (!id.equals("head") && slotList.isEmpty()) return null;
+        if (slotList.isEmpty()) slotList = List.of(4);
 
-        String matName = sec.getString("material", "AIR");
+        String matName = sec.getString("material", "PLAYER_HEAD");
         Material material = Material.matchMaterial(matName);
         if (material == null) material = Material.AIR;
 
@@ -120,7 +131,6 @@ public final class MenuLayout {
 
     /**
      * Parses a sound configuration section.
-     * @param sec      the YAML section to parse, or null
      * @param checkEnabled when true the section must have enabled: true (default) to return non-null
      */
     private static @Nullable SoundConfig parseSoundConfig(@Nullable ConfigurationSection sec,
@@ -142,15 +152,29 @@ public final class MenuLayout {
 
     // ---- getters ----
 
-    public String titleRaw()            { return titleRaw; }
-    public int size()                   { return size; }
-    public int headSlot()               { return headSlot; }
+    public String titleRaw() { return titleRaw; }
+    public int    size()     { return size; }
+
+    /**
+     * Head item configuration.
+     * If menu.yml has no {@code head:} section, returns a built-in default
+     * (slot 4, name {@code "<white><prefix><player>"}).
+     */
+    public MenuItemConfig headConfig() {
+        if (headConfig != null) return headConfig;
+        // Built-in default — white prefix then player name
+        return new MenuItemConfig(
+                "head", true, List.of(4), Material.PLAYER_HEAD,
+                "<white><prefix><player>", List.of(),
+                0, null, null, false, List.of(), null
+        );
+    }
 
     /** Equipment slot by name (helmet, chestplate, …). Returns -1 if not configured. */
-    public int equipmentSlot(String key){ return equipmentSlots.getOrDefault(key, -1); }
+    public int equipmentSlot(String key) { return equipmentSlots.getOrDefault(key, -1); }
 
     /** Cosmetic slot by key (e.g. "hmcc_HELMET"). Returns -1 if not configured. */
-    public int cosmeticSlot(String key) { return cosmeticSlots.getOrDefault(key, -1); }
+    public int cosmeticSlot(String key)  { return cosmeticSlots.getOrDefault(key, -1); }
 
     public List<MenuItemConfig> items() { return items; }
 

@@ -18,6 +18,14 @@ dependencies:
       load: BEFORE
       required: false
       join-classpath: true
+    LuckPerms:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    Vault:
+      load: BEFORE
+      required: false
+      join-classpath: true
 
 libraries:
   - "org.xerial:sqlite-jdbc:3.49.1.0"
@@ -26,8 +34,14 @@ libraries:
 
 permissions:
   cubixprofiles.profile:
-    description: Allows use of /profile.
+    description: Use /profile to view profiles.
     default: true
-  cubixprofiles.reload:
-    description: Allows use of /profile reload.
+  cubixprofiles.settings:
+    description: Use /profile settings to toggle visibility.
+    default: true
+  cubixprofiles.admin.reload:
+    description: Use /profile reload to reload the configuration.
+    default: op
+  cubixprofiles.admin.bypass:
+    description: Bypass world restrictions and view hidden profiles.
     default: op

@@ -8,9 +8,17 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 public final class MenuListener implements Listener {
 
+    private static final long SOUND_COOLDOWN_MS = 500L;
+
     private final CubixProfiles plugin;
+    // Per-player timestamp of the last sound played — used to enforce the cooldown.
+    private final Map<UUID, Long> soundCooldown = new ConcurrentHashMap<>();
 
     public MenuListener(CubixProfiles plugin) {
         this.plugin = plugin;
@@ -32,9 +40,14 @@ public final class MenuListener implements Listener {
         var sound = menu.soundForSlot(slot);
         if (sound == null) sound = menu.globalClickSound();
         if (sound != null) {
-            try {
-                viewer.playSound(sound.toAdventure());
-            } catch (Exception ignored) {} // guard against malformed namespace:key
+            long now = System.currentTimeMillis();
+            UUID id  = viewer.getUniqueId();
+            if (now - soundCooldown.getOrDefault(id, 0L) >= SOUND_COOLDOWN_MS) {
+                soundCooldown.put(id, now);
+                try {
+                    viewer.playSound(sound.toAdventure());
+                } catch (Exception ignored) {} // guard against malformed namespace:key
+            }
         }
 
         // Actions

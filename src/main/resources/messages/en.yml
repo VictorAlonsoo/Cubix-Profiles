@@ -1,7 +1,19 @@
-plugin-enabled:    "<#83CA16>CubixProfiles enabled."
-plugin-disabled:   "<#A5ACB8>CubixProfiles disabled."
-no-permission:     "<#D92625>You don't have permission to use this command."
-no-console:        "<#D92625>This command can only be used by players."
-player-not-found:  "<#D92625>Player <#5AB0FF><player><#D92625> not found."
-profile-loading:   "<#A5ACB8>Loading profile for <#5AB0FF><player><#A5ACB8>..."
-config-reloaded:   "<#83CA16>Configuration reloaded successfully."
+plugin:
+  enabled:  "<#83CA16>CubixProfiles enabled."
+  disabled: "<#A5ACB8>CubixProfiles disabled."
+
+error:
+  no-permission:  "<#D92625>You don't have permission to use this command."
+  no-console:     "<#D92625>This command can only be used by players."
+  world-disabled: "<#D92625>Profiles are disabled in this world."
+
+profile:
+  not-found: "<#D92625>Player <#5AB0FF><player><#D92625> not found."
+  hidden:    "<#D92625>This player has disabled their profile visibility."
+
+settings:
+  view-on:  "<#83CA16>Your profile is now <#5AB0FF>visible<#83CA16> to other players."
+  view-off: "<#A5ACB8>Your profile is now <#D92625>hidden<#A5ACB8>. Others cannot view it."
+
+admin:
+  config-reloaded: "<#83CA16>Configuration reloaded successfully."

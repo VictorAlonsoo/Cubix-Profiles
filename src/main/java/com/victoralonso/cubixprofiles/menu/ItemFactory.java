@@ -7,6 +7,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -24,17 +25,43 @@ public final class ItemFactory {
 
     /**
      * Build an ItemStack from a MenuItemConfig.
-     * Resolvers are applied to name and lore (supports <player>, etc.).
+     * PAPI placeholders in name/lore are resolved for {@code viewer} before MiniMessage parsing.
      */
     public ItemStack fromConfig(MenuItemConfig config, MessageService messages,
-                                TagResolver... resolvers) {
+                                @Nullable Player viewer, TagResolver... resolvers) {
         var item = new ItemStack(config.material());
         var meta = item.getItemMeta();
         if (meta == null) return item;
 
-        applyName(meta, config.name(), messages, resolvers);
-        applyLore(meta, config.lore(), messages, resolvers);
+        applyName(meta, config.name(), messages, viewer, resolvers);
+        applyLore(meta, config.lore(), messages, viewer, resolvers);
         applyExtras(meta, config);
+
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    /** Overload for callers without a viewer context (e.g. non-interactive previews). */
+    public ItemStack fromConfig(MenuItemConfig config, MessageService messages,
+                                TagResolver... resolvers) {
+        return fromConfig(config, messages, null, resolvers);
+    }
+
+    /**
+     * Build a player-head item using the given profile for the skin.
+     * All item metadata (name, lore, CMD, etc.) comes from {@code cfg}.
+     */
+    public ItemStack headFromConfig(MenuItemConfig cfg, PlayerProfile headProfile,
+                                    MessageService messages, @Nullable Player viewer,
+                                    TagResolver... resolvers) {
+        var item = new ItemStack(Material.PLAYER_HEAD);
+        var meta = (SkullMeta) item.getItemMeta();
+        if (meta == null) return item;
+
+        meta.setPlayerProfile(headProfile);
+        applyName(meta, cfg.name(), messages, viewer, resolvers);
+        applyLore(meta, cfg.lore(), messages, viewer, resolvers);
+        applyExtras(meta, cfg);
 
         item.setItemMeta(meta);
         return item;
@@ -45,31 +72,22 @@ public final class ItemFactory {
         return source != null ? source.clone() : null;
     }
 
-    /** Player head using a Paper PlayerProfile (carries resolved skin texture). */
-    public ItemStack head(PlayerProfile profile) {
-        var item = new ItemStack(Material.PLAYER_HEAD);
-        var meta = (SkullMeta) item.getItemMeta();
-        if (meta != null) {
-            meta.setPlayerProfile(profile);
-            item.setItemMeta(meta);
-        }
-        return item;
-    }
-
     // ---- private helpers ----
 
     private void applyName(ItemMeta meta, String raw, MessageService messages,
-                           TagResolver... resolvers) {
+                           @Nullable Player viewer, TagResolver... resolvers) {
         if (raw == null) return;
+        String processed = ProfileResolvers.applyPapi(viewer, raw);
         meta.displayName(
-                messages.parseRaw(raw, resolvers).decoration(TextDecoration.ITALIC, false));
+                messages.parseRaw(processed, resolvers).decoration(TextDecoration.ITALIC, false));
     }
 
     private void applyLore(ItemMeta meta, List<String> lines, MessageService messages,
-                           TagResolver... resolvers) {
+                           @Nullable Player viewer, TagResolver... resolvers) {
         if (lines == null || lines.isEmpty()) return;
         meta.lore(lines.stream()
-                .map(l -> messages.parseRaw(l, resolvers).decoration(TextDecoration.ITALIC, false))
+                .map(l -> messages.parseRaw(ProfileResolvers.applyPapi(viewer, l), resolvers)
+                                  .decoration(TextDecoration.ITALIC, false))
                 .toList());
     }
 

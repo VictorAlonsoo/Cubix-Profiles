@@ -19,6 +19,8 @@
         <mysql.connector.version>9.2.0</mysql.connector.version>
         <placeholderapi.version>2.11.6</placeholderapi.version>
         <hmccosmetics.version>2.9.0</hmccosmetics.version>
+        <luckperms.version>5.4</luckperms.version>
+        <vault.version>1.7.1</vault.version>
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     </properties>
 
@@ -34,6 +36,14 @@
         <repository>
             <id>hibiscusmc</id>
             <url>https://repo.hibiscusmc.com/releases</url>
+        </repository>
+        <repository>
+            <id>luckperms</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </repository>
     </repositories>
 
@@ -85,6 +95,24 @@
             <artifactId>placeholderapi</artifactId>
             <version>${placeholderapi.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.luckperms</groupId>
+            <artifactId>api</artifactId>
+            <version>${luckperms.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.MilkBowl</groupId>
+            <artifactId>VaultAPI</artifactId>
+            <version>${vault.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bukkit</groupId>
+                    <artifactId>bukkit</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

@@ -1,71 +1,54 @@
 package com.victoralonso.cubixprofiles.command;
 
-import com.destroystokyo.paper.profile.PlayerProfile;
 import com.victoralonso.cubixprofiles.CubixProfiles;
-import com.victoralonso.cubixprofiles.menu.ProfileMenu;
-import com.victoralonso.cubixprofiles.profile.ProfileSnapshot;
+import com.victoralonso.cubixprofiles.command.admin.ReloadSubCommand;
+import com.victoralonso.cubixprofiles.command.user.SettingsSubCommand;
+import com.victoralonso.cubixprofiles.command.user.ViewSubCommand;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 public final class ProfileCommand implements BasicCommand {
 
     private final CubixProfiles plugin;
 
+    private final SubCommand viewCmd     = new ViewSubCommand();
+    private final SubCommand settingsCmd = new SettingsSubCommand();
+    private final SubCommand reloadCmd   = new ReloadSubCommand();
+
     public ProfileCommand(CubixProfiles plugin) {
         this.plugin = plugin;
     }
 
-    // ---- execution ----
+    // ---- dispatch ----
 
     @Override
     public void execute(@NotNull CommandSourceStack source, @NotNull String[] args) {
-        var sender   = source.getSender();
-        var messages = plugin.messages();
+        var sender = source.getSender();
 
         if (!sender.hasPermission("cubixprofiles.profile")) {
-            messages.send(sender, "no-permission");
+            plugin.messages().send(sender, "error.no-permission");
             return;
         }
 
-        // /profile reload
-        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
-            if (!sender.hasPermission("cubixprofiles.reload")) {
-                messages.send(sender, "no-permission");
-                return;
-            }
-            plugin.reload();
-            plugin.messages().send(sender, "config-reloaded");
+        if (args.length >= 1 && args[0].equalsIgnoreCase("reload")) {
+            reloadCmd.execute(plugin, source, args);
             return;
         }
 
-        if (!(sender instanceof Player viewer)) {
-            messages.send(sender, "no-console");
+        if (args.length >= 1 && args[0].equalsIgnoreCase("settings")) {
+            String[] sub = args.length > 1 ? Arrays.copyOfRange(args, 1, args.length) : new String[0];
+            settingsCmd.execute(plugin, source, sub);
             return;
         }
 
-        if (args.length == 0) {
-            openOnline(viewer, viewer);
-            return;
-        }
-
-        Player online = viewer.getServer().getPlayerExact(args[0]);
-        if (online != null) {
-            openOnline(viewer, online);
-            return;
-        }
-
-        openOfflineAsync(viewer, args[0]);
+        viewCmd.execute(plugin, source, args);
     }
 
     // ---- tab completion ----
@@ -74,77 +57,30 @@ public final class ProfileCommand implements BasicCommand {
     public @NotNull Collection<String> suggest(@NotNull CommandSourceStack source,
                                                @NotNull String[] args) {
         var sender = source.getSender();
+
         if (args.length <= 1) {
             String input = args.length == 1 ? args[0].toLowerCase() : "";
             var suggestions = new ArrayList<String>();
-            if (sender.hasPermission("cubixprofiles.reload") && "reload".startsWith(input)) {
+            if (sender.hasPermission("cubixprofiles.admin.reload") && "reload".startsWith(input))
                 suggestions.add("reload");
-            }
+            if (sender.hasPermission("cubixprofiles.settings") && "settings".startsWith(input))
+                suggestions.add("settings");
             sender.getServer().getOnlinePlayers().stream()
-                    .map(Player::getName)
+                    .map(p -> p.getName())
                     .filter(n -> n.toLowerCase().startsWith(input))
                     .forEach(suggestions::add);
             return suggestions;
         }
+
+        if (args.length == 2 && args[0].equalsIgnoreCase("settings")) {
+            return settingsCmd.suggest(plugin, source, new String[]{args[1]});
+        }
+
         return List.of();
     }
 
     @Override
     public boolean canUse(@NotNull CommandSender sender) {
         return sender.hasPermission("cubixprofiles.profile");
-    }
-
-    // ---- online (main thread) ----
-
-    private void openOnline(Player viewer, Player target) {
-        // capture() refreshes equipment + cosmetics via CosmeticsManager
-        plugin.profileService().capture(target);
-        var snapshot = plugin.profileService().getCached(target.getUniqueId());
-
-        PlayerProfile profile = Bukkit.createProfile(target.getUniqueId(), target.getName());
-        profile.completeFromCache();
-
-        new ProfileMenu(snapshot, plugin.menuLayout(), plugin.itemFactory(),
-                plugin.messages(), profile).open(viewer);
-    }
-
-    // ---- offline (async: storage → Mojang skin → viewer thread) ----
-
-    private void openOfflineAsync(Player viewer, String targetName) {
-        plugin.messages().send(viewer, "profile-loading",
-                Placeholder.unparsed("player", targetName));
-
-        plugin.profileService().findOfflineAsync(targetName).thenAccept(opt -> {
-            if (opt.isEmpty()) {
-                runOnViewer(viewer, () -> plugin.messages().send(viewer, "player-not-found",
-                        Placeholder.unparsed("player", targetName)));
-                return;
-            }
-            resolveAndOpen(viewer, opt.get());
-        });
-    }
-
-    private void resolveAndOpen(Player viewer, ProfileSnapshot snapshot) {
-        PlayerProfile profile = Bukkit.createProfile(snapshot.uniqueId(), snapshot.username());
-
-        CompletableFuture.runAsync(() -> profile.complete(true))
-                .orTimeout(10, TimeUnit.SECONDS)
-                .thenRun(() -> openOfflineMenu(viewer, snapshot, profile))
-                .exceptionally(ex -> {
-                    openOfflineMenu(viewer, snapshot, profile);
-                    return null;
-                });
-    }
-
-    private void openOfflineMenu(Player viewer, ProfileSnapshot snapshot, PlayerProfile profile) {
-        runOnViewer(viewer, () -> {
-            if (!viewer.isOnline()) return;
-            new ProfileMenu(snapshot, plugin.menuLayout(), plugin.itemFactory(),
-                    plugin.messages(), profile).open(viewer);
-        });
-    }
-
-    private void runOnViewer(Player viewer, Runnable task) {
-        viewer.getScheduler().run(plugin, t -> task.run(), null);
     }
 }

@@ -1,7 +1,19 @@
-plugin-enabled:    "<#83CA16>CubixProfiles habilitado."
-plugin-disabled:   "<#A5ACB8>CubixProfiles deshabilitado."
-no-permission:     "<#D92625>No tienes permiso para usar este comando."
-no-console:        "<#D92625>Este comando solo puede ser usado por jugadores."
-player-not-found:  "<#D92625>Jugador <#5AB0FF><player><#D92625> no encontrado."
-profile-loading:   "<#A5ACB8>Cargando perfil de <#5AB0FF><player><#A5ACB8>..."
-config-reloaded:   "<#83CA16>Configuración recargada correctamente."
+plugin:
+  enabled:  "<#83CA16>CubixProfiles habilitado."
+  disabled: "<#A5ACB8>CubixProfiles deshabilitado."
+
+error:
+  no-permission:  "<#D92625>No tienes permiso para usar este comando."
+  no-console:     "<#D92625>Este comando solo puede ser usado por jugadores."
+  world-disabled: "<#D92625>Los perfiles están desactivados en este mundo."
+
+profile:
+  not-found: "<#D92625>Jugador <#5AB0FF><player><#D92625> no encontrado."
+  hidden:    "<#D92625>Este jugador ha desactivado la visibilidad de su perfil."
+
+settings:
+  view-on:  "<#83CA16>Tu perfil ahora es <#5AB0FF>visible<#83CA16> para otros jugadores."
+  view-off: "<#A5ACB8>Tu perfil ahora está <#D92625>oculto<#A5ACB8>. Otros no pueden verlo."
+
+admin:
+  config-reloaded: "<#83CA16>Configuración recargada correctamente."

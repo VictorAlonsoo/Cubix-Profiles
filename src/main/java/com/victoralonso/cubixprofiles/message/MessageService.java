@@ -36,14 +36,14 @@ public final class MessageService {
         Map<String, String> cached = langCache.get(lang);
         if (cached != null) return cached;
 
-        // Copy bundled file to data folder on first run (never overwrites)
-        if (plugin.getResource("messages/" + lang + ".yml") != null) {
+        // Prefer the external (user-editable) file
+        var external = new File(plugin.getDataFolder(), "messages/" + lang + ".yml");
+
+        // Copy bundled file to data folder only on first run — never overwrites
+        if (!external.exists() && plugin.getResource("messages/" + lang + ".yml") != null) {
             try { plugin.saveResource("messages/" + lang + ".yml", false); }
             catch (Exception ignored) {}
         }
-
-        // Prefer the external (user-editable) file
-        var external = new File(plugin.getDataFolder(), "messages/" + lang + ".yml");
         YamlConfiguration cfg;
         if (external.exists()) {
             cfg = YamlConfiguration.loadConfiguration(external);
@@ -59,8 +59,9 @@ public final class MessageService {
         }
 
         var map = new HashMap<String, String>();
-        for (String key : cfg.getKeys(false)) {
-            map.put(key, cfg.getString(key, key));
+        // getKeys(true) walks every path recursively; isString filters out section nodes
+        for (String key : cfg.getKeys(true)) {
+            if (cfg.isString(key)) map.put(key, cfg.getString(key, key));
         }
         var result = Collections.unmodifiableMap(map);
         langCache.putIfAbsent(lang, result);

@@ -1,15 +1,16 @@
 package com.victoralonso.cubixprofiles.profile.storage;
 
 import com.victoralonso.cubixprofiles.config.ConfigManager;
+import com.victoralonso.cubixprofiles.profile.PlayerSettings;
 import com.victoralonso.cubixprofiles.profile.ProfileSnapshot;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -19,8 +20,9 @@ public final class MySQLStorage implements StorageManager {
     // language=SQL
     private static final String DDL_PROFILES = """
             CREATE TABLE IF NOT EXISTS profiles (
-                uuid        CHAR(36)    NOT NULL PRIMARY KEY,
-                username    VARCHAR(16) NOT NULL,
+                uuid        CHAR(36)     NOT NULL PRIMARY KEY,
+                username    VARCHAR(16)  NOT NULL,
+                prefix      VARCHAR(255) NOT NULL DEFAULT '',
                 helmet      MEDIUMBLOB,
                 chestplate  MEDIUMBLOB,
                 leggings    MEDIUMBLOB,
@@ -42,11 +44,20 @@ public final class MySQLStorage implements StorageManager {
             """;
 
     // language=SQL
+    private static final String DDL_SETTINGS = """
+            CREATE TABLE IF NOT EXISTS player_settings (
+                uuid            CHAR(36)   NOT NULL PRIMARY KEY,
+                profile_visible TINYINT(1) NOT NULL DEFAULT 1
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """;
+
+    // language=SQL
     private static final String UPSERT = """
-            INSERT INTO profiles (uuid, username, helmet, chestplate, leggings, boots, main_hand, off_hand)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO profiles (uuid, username, prefix, helmet, chestplate, leggings, boots, main_hand, off_hand)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 username   = VALUES(username),
+                prefix     = VALUES(prefix),
                 helmet     = VALUES(helmet),
                 chestplate = VALUES(chestplate),
                 leggings   = VALUES(leggings),
@@ -56,12 +67,15 @@ public final class MySQLStorage implements StorageManager {
             """;
 
     private static final String UPSERT_COSMETIC      = "INSERT INTO profile_cosmetics (uuid, slot, item) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE item = VALUES(item)";
+    private static final String UPSERT_SETTINGS       = "INSERT INTO player_settings (uuid, profile_visible) VALUES (?, ?) ON DUPLICATE KEY UPDATE profile_visible = VALUES(profile_visible)";
     private static final String DELETE_COSMETICS      = "DELETE FROM profile_cosmetics WHERE uuid = ?";
     private static final String SELECT_UUID           = "SELECT * FROM profiles WHERE uuid = ? LIMIT 1";
     private static final String SELECT_USERNAME       = "SELECT * FROM profiles WHERE username = ? LIMIT 1";
     private static final String SELECT_COSMETICS      = "SELECT slot, item FROM profile_cosmetics WHERE uuid = ?";
+    private static final String SELECT_SETTINGS       = "SELECT profile_visible FROM player_settings WHERE uuid = ? LIMIT 1";
     private static final String DELETE_UUID           = "DELETE FROM profiles WHERE uuid = ?";
     private static final String DELETE_COSMETICS_UUID = "DELETE FROM profile_cosmetics WHERE uuid = ?";
+    private static final String DELETE_SETTINGS_UUID  = "DELETE FROM player_settings WHERE uuid = ?";
 
     private final HikariDataSource dataSource;
     private final JavaPlugin plugin;
@@ -89,6 +103,10 @@ public final class MySQLStorage implements StorageManager {
         try (var con = dataSource.getConnection(); var stmt = con.createStatement()) {
             stmt.execute(DDL_PROFILES);
             stmt.execute(DDL_COSMETICS);
+            stmt.execute(DDL_SETTINGS);
+        }
+        try (var con = dataSource.getConnection()) {
+            DatabaseMigrator.migrate(con, plugin, true);
         }
     }
 
@@ -98,12 +116,13 @@ public final class MySQLStorage implements StorageManager {
              var ps = con.prepareStatement(UPSERT)) {
             ps.setString(1, s.uniqueId().toString());
             ps.setString(2, s.username());
-            ps.setBytes(3, toBytes(s.helmet()));
-            ps.setBytes(4, toBytes(s.chestplate()));
-            ps.setBytes(5, toBytes(s.leggings()));
-            ps.setBytes(6, toBytes(s.boots()));
-            ps.setBytes(7, toBytes(s.mainHand()));
-            ps.setBytes(8, toBytes(s.offHand()));
+            ps.setString(3, s.prefix());
+            ps.setBytes(4, StorageUtils.toBytes(s.helmet()));
+            ps.setBytes(5, StorageUtils.toBytes(s.chestplate()));
+            ps.setBytes(6, StorageUtils.toBytes(s.leggings()));
+            ps.setBytes(7, StorageUtils.toBytes(s.boots()));
+            ps.setBytes(8, StorageUtils.toBytes(s.mainHand()));
+            ps.setBytes(9, StorageUtils.toBytes(s.offHand()));
             ps.executeUpdate();
         } catch (SQLException e) {
             plugin.getLogger().log(Level.WARNING, "Failed to save profile for " + s.username(), e);
@@ -121,7 +140,7 @@ public final class MySQLStorage implements StorageManager {
             if (s.cosmetics().isEmpty()) return;
             try (var ins = con.prepareStatement(UPSERT_COSMETIC)) {
                 for (var entry : s.cosmetics().entrySet()) {
-                    byte[] bytes = toBytes(entry.getValue());
+                    byte[] bytes = StorageUtils.toBytes(entry.getValue());
                     if (bytes == null) continue;
                     ins.setString(1, uuid);
                     ins.setString(2, entry.getKey());
@@ -169,8 +188,37 @@ public final class MySQLStorage implements StorageManager {
             try (var ps = con.prepareStatement(DELETE_COSMETICS_UUID)) {
                 ps.setString(1, uuid); ps.executeUpdate();
             }
+            try (var ps = con.prepareStatement(DELETE_SETTINGS_UUID)) {
+                ps.setString(1, uuid); ps.executeUpdate();
+            }
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.WARNING, "Failed to delete profile for " + uniqueId, e);
+            plugin.getLogger().log(Level.WARNING, "Failed to delete data for " + uniqueId, e);
+        }
+    }
+
+    @Override
+    public void saveSettings(PlayerSettings settings) {
+        try (var con = dataSource.getConnection();
+             var ps = con.prepareStatement(UPSERT_SETTINGS)) {
+            ps.setString(1, settings.uniqueId().toString());
+            ps.setInt(2, settings.profileVisible() ? 1 : 0);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to save settings for " + settings.uniqueId(), e);
+        }
+    }
+
+    @Override
+    public Optional<PlayerSettings> loadSettings(UUID uniqueId) {
+        try (var con = dataSource.getConnection();
+             var ps = con.prepareStatement(SELECT_SETTINGS)) {
+            ps.setString(1, uniqueId.toString());
+            var rs = ps.executeQuery();
+            if (!rs.next()) return Optional.empty();
+            return Optional.of(new PlayerSettings(uniqueId, rs.getInt("profile_visible") == 1));
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to load settings for " + uniqueId, e);
+            return Optional.empty();
         }
     }
 
@@ -187,42 +235,29 @@ public final class MySQLStorage implements StorageManager {
         return Optional.of(new ProfileSnapshot(
                 uuid,
                 rs.getString("username"),
-                fromBytes(rs.getBytes("helmet")),
-                fromBytes(rs.getBytes("chestplate")),
-                fromBytes(rs.getBytes("leggings")),
-                fromBytes(rs.getBytes("boots")),
-                fromBytes(rs.getBytes("main_hand")),
-                fromBytes(rs.getBytes("off_hand")),
+                Objects.requireNonNullElse(rs.getString("prefix"), ""),
+                StorageUtils.fromBytes(rs.getBytes("helmet")),
+                StorageUtils.fromBytes(rs.getBytes("chestplate")),
+                StorageUtils.fromBytes(rs.getBytes("leggings")),
+                StorageUtils.fromBytes(rs.getBytes("boots")),
+                StorageUtils.fromBytes(rs.getBytes("main_hand")),
+                StorageUtils.fromBytes(rs.getBytes("off_hand")),
                 loadCosmetics(con, uuid)
         ));
     }
 
-    private Map<String, ItemStack> loadCosmetics(Connection con, UUID uuid) {
-        var map = new HashMap<String, ItemStack>();
+    private Map<String, org.bukkit.inventory.ItemStack> loadCosmetics(Connection con, UUID uuid) {
+        var map = new HashMap<String, org.bukkit.inventory.ItemStack>();
         try (var ps = con.prepareStatement(SELECT_COSMETICS)) {
             ps.setString(1, uuid.toString());
             var rs = ps.executeQuery();
             while (rs.next()) {
-                var item = fromBytes(rs.getBytes("item"));
+                var item = StorageUtils.fromBytes(rs.getBytes("item"));
                 if (item != null) map.put(rs.getString("slot"), item);
             }
         } catch (SQLException e) {
             plugin.getLogger().log(Level.WARNING, "Failed to load cosmetics for " + uuid, e);
         }
         return Map.copyOf(map);
-    }
-
-    private byte[] toBytes(ItemStack item) {
-        if (item == null || item.isEmpty()) return null;
-        return item.serializeAsBytes();
-    }
-
-    private ItemStack fromBytes(byte[] bytes) {
-        if (bytes == null || bytes.length == 0) return null;
-        try {
-            return ItemStack.deserializeBytes(bytes);
-        } catch (Exception e) {
-            return null;
-        }
     }
 }

@@ -1,24 +1,47 @@
 title: "<bold><#FFFFFF>Profile: <#5AB0FF><player>"
-size: 54
 
-# Slot for the player's head (skin display). Not equipment, not cosmetic.
-head-slot: 4
+# Number of rows: 1-6 (default: 6 = 54 slots)
+rows: 6
+
+# ──────────────────────────────────────────────
+#  Head slot — fully configurable like any other item.
+#
+#  Placeholders available in name/lore:
+#    <player>  — profile owner's name
+#    <prefix>  — rank prefix (may contain MiniMessage tags; LuckPerms or Vault)
+#    <viewer>  — player viewing the GUI
+#    %papi%    — any PlaceholderAPI placeholder (resolved for the viewer)
+#
+#  All standard item fields apply: custom-model-data, item-model,
+#  tooltip-style, hide-tooltip, lore, actions, sound.
+# ──────────────────────────────────────────────
+head:
+  slot: 4
+  name: "<white><prefix><player>"
+  # lore:
+  #   - "<#A5ACB8>Click to inspect."
+  # custom-model-data: 0
+  # item-model: "namespace:path"
+  # tooltip-style: "namespace:path"
+  # hide-tooltip: false
+  # actions:
+  #   - "[close]"
+  # sound:
+  #   sound: "minecraft:ui.button.click"
+  #   source: MASTER
+  #   volume: 1.0
+  #   pitch: 1.0
 
 # ──────────────────────────────────────────────
 #  Global click sound.
 #  Played whenever a player clicks a slot that contains an item.
 #  Per-item sound (see items: section) overrides this value.
-#
-#  sound:  vanilla key  →  "minecraft:ui.button.click"
-#          resource-pack key  →  "myrp:ui.menu.click"
-#  source: which volume slider controls this sound in the client's options.
-#          MASTER | MUSIC | RECORD | WEATHER | BLOCK | HOSTILE | NEUTRAL | PLAYER | AMBIENT | VOICE
 # ──────────────────────────────────────────────
 click-sound:
   enabled: true
   sound: "minecraft:ui.button.click"
   source: MASTER
-  volume: 1.0
+  volume: 0.3
   pitch: 1.0
 
 # Positions for the Minecraft equipment items.
@@ -47,16 +70,16 @@ cosmetic-slots:
 #  Custom items rendered inside the GUI.
 #
 #  Fields:
-#    enabled:          true | false  (default: true)
-#    slot:             single slot   (0 – size-1)
-#    slots:            "0-53"  |  "0,1,2"  |  [0, 1, 2]
-#    material:         BUKKIT material name  ← required
-#    name:             MiniMessage string    ← required
-#    lore:             list of MiniMessage lines
+#    enabled:           true | false  (default: true)
+#    slot:              single slot   (0 – size-1)
+#    slots:             "0-53"  |  "0,1,2"  |  [0, 1, 2]
+#    material:          BUKKIT material name  ← required
+#    name:              MiniMessage string    ← required
+#    lore:              list of MiniMessage lines
 #    custom-model-data: integer
-#    item-model:       "namespace:path"
-#    tooltip-style:    "namespace:path"
-#    hide-tooltip:     true | false  (default: false)
+#    item-model:        "namespace:path"
+#    tooltip-style:     "namespace:path"
+#    hide-tooltip:      true | false  (default: false)
 #
 #  Actions (executed on click):
 #    actions:
@@ -64,7 +87,7 @@ cosmetic-slots:
 #      - "[console] <command>"   — console runs a command
 #      - "[message] <text>"      — sends a MiniMessage message to the viewer
 #      - "[close]"               — closes the inventory
-#    Placeholders in actions: <player> (profile owner), <viewer> (clicker), %papi% (PlaceholderAPI)
+#    Placeholders: <player>, <prefix>, <viewer>, %papi%
 #
 #  Per-item sound (overrides click-sound for this item only):
 #    sound:
@@ -72,8 +95,6 @@ cosmetic-slots:
 #      source: MASTER
 #      volume: 1.0
 #      pitch:  1.0
-#
-#  Placeholder available in name/lore/actions: <player>
 # ──────────────────────────────────────────────
 items:
 
@@ -98,10 +119,10 @@ items:
   # info:
   #   enabled: true
   #   slot: 49
-  #   material: PLAYER_HEAD
+  #   material: PAPER
   #   name: "<bold><#FFFFFF><player>"
   #   lore:
-  #     - "<#A5ACB8>Click to view <player>'s stats."
+  #     - "<#A5ACB8>Click to view <#5AB0FF><player><#A5ACB8>'s stats."
   #   actions:
   #     - "[player] stats <player>"
   #     - "[message] <#A5ACB8>Opening stats for <#5AB0FF><player><#A5ACB8>..."

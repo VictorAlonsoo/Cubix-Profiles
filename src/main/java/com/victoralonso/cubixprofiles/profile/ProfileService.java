@@ -2,8 +2,8 @@ package com.victoralonso.cubixprofiles.profile;
 
 import com.victoralonso.cubixprofiles.cosmetics.CosmeticsManager;
 import com.victoralonso.cubixprofiles.profile.storage.StorageManager;
+import com.victoralonso.cubixprofiles.rank.RankManager;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
@@ -18,26 +18,28 @@ public final class ProfileService {
     private final StorageManager storage;
     private final JavaPlugin plugin;
     private final CosmeticsManager cosmeticsManager; // null if no cosmetics plugin active
+    private final RankManager rankManager;            // null if no rank provider registered
 
     public ProfileService(JavaPlugin plugin, StorageManager storage,
-                          CosmeticsManager cosmeticsManager) {
-        this.plugin            = plugin;
-        this.storage           = storage;
-        this.cosmeticsManager  = cosmeticsManager;
+                          CosmeticsManager cosmeticsManager, RankManager rankManager) {
+        this.plugin           = plugin;
+        this.storage          = storage;
+        this.cosmeticsManager = cosmeticsManager;
+        this.rankManager      = rankManager;
     }
 
     // ---- snapshot capture ----
 
     /**
-     * Capture the full snapshot (equipment + cosmetics) for a connected player
-     * and store it in the cache. This is the preferred entry point — use it
-     * instead of ProfileSnapshot.of(player) directly.
+     * Capture the full snapshot (prefix + equipment + cosmetics) for a connected player
+     * and store it in the cache. Always use this instead of ProfileSnapshot.of() directly.
      */
     public void capture(Player player) {
-        var cosmetics = cosmeticsManager != null
+        String prefix   = rankManager != null ? rankManager.capturePrefix(player) : "";
+        var cosmetics   = cosmeticsManager != null
                 ? cosmeticsManager.captureAll(player)
-                : Map.<String, ItemStack>of();
-        put(ProfileSnapshot.of(player, cosmetics));
+                : Map.<String, org.bukkit.inventory.ItemStack>of();
+        put(ProfileSnapshot.of(player, prefix, cosmetics));
     }
 
     // ---- cache access ----

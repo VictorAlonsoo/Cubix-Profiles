@@ -28,6 +28,11 @@ public final class ConfigManager {
         return plugin.getConfig().getString("storage.type", "sqlite");
     }
 
+    /** Path to the SQLite database file, relative to the plugin data folder. */
+    public String sqliteFile() {
+        return plugin.getConfig().getString("storage.sqlite.file", "data/profiles.db");
+    }
+
     public String mysqlHost() {
         return plugin.getConfig().getString("storage.mysql.host", "localhost");
     }
@@ -60,6 +65,16 @@ public final class ConfigManager {
 
     public List<String> hmcCosmeticsSlots() {
         return plugin.getConfig().getStringList("cosmetics.providers.hmccosmetics.slots");
+    }
+
+    // ---- world blacklist ----
+
+    public List<String> disabledWorlds() {
+        return plugin.getConfig().getStringList("disabled-worlds");
+    }
+
+    public boolean isWorldDisabled(String worldName) {
+        return disabledWorlds().stream().anyMatch(w -> w.equalsIgnoreCase(worldName));
     }
 
     // ---- lifecycle ----

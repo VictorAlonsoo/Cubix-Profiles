@@ -13,12 +13,20 @@ import com.victoralonso.cubixprofiles.message.MessageService;
 import com.victoralonso.cubixprofiles.placeholder.CubixPlaceholderExpansion;
 import com.victoralonso.cubixprofiles.profile.ProfileListener;
 import com.victoralonso.cubixprofiles.profile.ProfileService;
+import com.victoralonso.cubixprofiles.profile.SettingsService;
 import com.victoralonso.cubixprofiles.profile.storage.MySQLStorage;
 import com.victoralonso.cubixprofiles.profile.storage.SQLiteStorage;
 import com.victoralonso.cubixprofiles.profile.storage.StorageManager;
+import com.victoralonso.cubixprofiles.rank.RankManager;
+import com.victoralonso.cubixprofiles.rank.luckperms.LuckPermsRankListener;
+import com.victoralonso.cubixprofiles.rank.luckperms.LuckPermsRankProvider;
+import com.victoralonso.cubixprofiles.rank.vault.VaultRankProvider;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import net.luckperms.api.event.EventSubscription;
+import net.luckperms.api.event.user.UserDataRecalculateEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -29,12 +37,15 @@ public final class CubixProfiles extends JavaPlugin {
     private MessageService messages;
     private StorageManager storage;
     private CosmeticsManager cosmeticsManager;
+    private RankManager rankManager;
     private ProfileService profileService;
+    private SettingsService settingsService;
     private CapabilityDetector caps;
     private MenuLayout menuLayout;
     private ItemFactory itemFactory;
 
     private BukkitTask updateTask;
+    @Nullable private EventSubscription<UserDataRecalculateEvent> lpSubscription;
 
     @Override
     public void onEnable() {
@@ -42,12 +53,13 @@ public final class CubixProfiles extends JavaPlugin {
         configManager    = new ConfigManager(this);
         messages         = new MessageService(this, configManager.language());
         cosmeticsManager = new CosmeticsManager();
+        rankManager      = new RankManager();
 
         // Storage backend
         try {
             storage = switch (configManager.storageType().toLowerCase()) {
                 case "mysql" -> new MySQLStorage(this, configManager);
-                default      -> new SQLiteStorage(this);
+                default      -> new SQLiteStorage(this, configManager.sqliteFile());
             };
         } catch (SQLException e) {
             getLogger().log(Level.SEVERE, "Failed to initialize storage backend, disabling plugin.", e);
@@ -55,11 +67,14 @@ public final class CubixProfiles extends JavaPlugin {
             return;
         }
 
-        profileService = new ProfileService(this, storage, cosmeticsManager);
-        getServer().getPluginManager().registerEvents(new ProfileListener(profileService), this);
+        profileService  = new ProfileService(this, storage, cosmeticsManager, rankManager);
+        settingsService = new SettingsService(this, storage);
 
-        // Optional cosmetics integrations
+        registerRankProviders();
         registerCosmeticsProviders();
+
+        getServer().getPluginManager().registerEvents(
+                new ProfileListener(profileService, settingsService), this);
 
         // GUI
         caps        = new CapabilityDetector();
@@ -78,26 +93,27 @@ public final class CubixProfiles extends JavaPlugin {
 
         // Optional PlaceholderAPI integration
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            new CubixPlaceholderExpansion(profileService, getPluginMeta().getVersion()).register();
+            new CubixPlaceholderExpansion(profileService, settingsService, getPluginMeta().getVersion()).register();
             getLogger().info("PlaceholderAPI integration enabled.");
         }
 
         scheduleUpdateTask();
-        messages.sendConsole("plugin-enabled");
+        messages.sendConsole("plugin.enabled");
     }
 
     @Override
     public void onDisable() {
-        if (updateTask != null) updateTask.cancel();
-        if (messages  != null) messages.sendConsole("plugin-disabled");
-        if (storage   != null) storage.close();
+        if (lpSubscription != null) { lpSubscription.close(); lpSubscription = null; }
+        if (updateTask     != null) updateTask.cancel();
+        if (messages       != null) messages.sendConsole("plugin.disabled");
+        if (storage        != null) storage.close();
     }
 
     // ---- reload ----
 
     /**
-     * Reloads config.yml, messages, menu layout, and cosmetics providers.
-     * Storage backend is NOT reloaded to avoid data loss.
+     * Reloads config, messages, menu layout, and rank/cosmetics providers.
+     * Storage is NOT reloaded to avoid data loss.
      */
     public void reload() {
         reloadConfig();
@@ -105,11 +121,29 @@ public final class CubixProfiles extends JavaPlugin {
         messages   = new MessageService(this, configManager.language());
         menuLayout = new MenuLayout(this);
 
+        // Close existing LP subscription before re-registering providers
+        if (lpSubscription != null) { lpSubscription.close(); lpSubscription = null; }
+        rankManager.reload();
+        registerRankProviders();
+
         cosmeticsManager.reload();
         registerCosmeticsProviders();
 
         if (updateTask != null) updateTask.cancel();
         scheduleUpdateTask();
+    }
+
+    // ---- rank providers ----
+
+    private void registerRankProviders() {
+        if (getServer().getPluginManager().isPluginEnabled("LuckPerms")) {
+            rankManager.register(new LuckPermsRankProvider());
+            lpSubscription = LuckPermsRankListener.subscribe(profileService);
+            getLogger().info("LuckPerms rank integration enabled.");
+        } else if (getServer().getPluginManager().isPluginEnabled("Vault")) {
+            rankManager.register(new VaultRankProvider());
+            getLogger().info("Vault rank integration enabled.");
+        }
     }
 
     // ---- cosmetics ----
@@ -136,11 +170,13 @@ public final class CubixProfiles extends JavaPlugin {
 
     // ---- getters ----
 
-    public ConfigManager configManager()     { return configManager; }
-    public MessageService messages()         { return messages; }
-    public ProfileService profileService()   { return profileService; }
-    public CosmeticsManager cosmeticsManager(){ return cosmeticsManager; }
-    public CapabilityDetector caps()         { return caps; }
-    public MenuLayout menuLayout()           { return menuLayout; }
-    public ItemFactory itemFactory()         { return itemFactory; }
+    public ConfigManager   configManager()      { return configManager; }
+    public MessageService  messages()           { return messages; }
+    public ProfileService  profileService()     { return profileService; }
+    public SettingsService settingsService()    { return settingsService; }
+    public CosmeticsManager cosmeticsManager()  { return cosmeticsManager; }
+    public RankManager     rankManager()        { return rankManager; }
+    public CapabilityDetector caps()            { return caps; }
+    public MenuLayout      menuLayout()         { return menuLayout; }
+    public ItemFactory     itemFactory()        { return itemFactory; }
 }

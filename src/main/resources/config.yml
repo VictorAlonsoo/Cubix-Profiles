@@ -1,5 +1,11 @@
 language: en
 
+# Worlds where /profile is completely disabled.
+# Players with cubixprofiles.admin.bypass (or OP) can still use it.
+disabled-worlds:
+  # - world_nether
+  # - world_the_end
+
 # Ticks between automatic snapshot refresh for online players.
 # 20 ticks = 1 second. Set to 0 to disable.
 # Recommended: 200 (10 s) – 600 (30 s).
@@ -24,6 +30,11 @@ cosmetics:
 storage:
   # Available backends: sqlite | mysql
   type: sqlite
+
+  sqlite:
+    # Path to the database file, relative to the plugin data folder.
+    # Default: plugins/CubixProfiles/data/profiles.db
+    file: data/profiles.db
 
   mysql:
     host: localhost

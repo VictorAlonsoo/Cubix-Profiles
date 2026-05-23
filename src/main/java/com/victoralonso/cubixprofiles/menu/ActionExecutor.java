@@ -60,10 +60,8 @@ public final class ActionExecutor {
 
     private static String resolve(String text, Player viewer, ProfileSnapshot snapshot) {
         text = text.replace("<player>", snapshot.username());
-        text = text.replace("<viewer>", viewer.getName());
-        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            text = me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(viewer, text);
-        }
-        return text;
+        text = text.replace("<viewer>",  viewer.getName());
+        text = text.replace("<prefix>",  snapshot.prefix() != null ? snapshot.prefix() : "");
+        return ProfileResolvers.applyPapi(viewer, text);
     }
 }

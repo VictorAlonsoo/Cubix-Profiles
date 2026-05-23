@@ -3,7 +3,6 @@ package com.victoralonso.cubixprofiles.menu;
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.victoralonso.cubixprofiles.message.MessageService;
 import com.victoralonso.cubixprofiles.profile.ProfileSnapshot;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -24,6 +23,7 @@ public final class ProfileMenu implements InventoryHolder {
     private final MessageService messages;
     private final PlayerProfile headProfile;
     private final ProfileSnapshot snapshot;
+    private final Player viewer;
 
     // Maps slot index → MenuItemConfig for items declared in the items: section.
     // Used by MenuListener to resolve per-item sounds and actions.
@@ -31,17 +31,16 @@ public final class ProfileMenu implements InventoryHolder {
 
     public ProfileMenu(ProfileSnapshot snapshot, MenuLayout layout,
                        ItemFactory factory, MessageService messages,
-                       PlayerProfile headProfile) {
+                       PlayerProfile headProfile, Player viewer) {
         this.snapshot    = snapshot;
         this.layout      = layout;
         this.factory     = factory;
         this.messages    = messages;
         this.headProfile = headProfile;
+        this.viewer      = viewer;
 
-        var title = messages.parseRaw(
-                layout.titleRaw(),
-                Placeholder.unparsed("player", snapshot.username())
-        );
+        var resolvers = ProfileResolvers.build(snapshot, viewer);
+        var title = messages.parseRaw(layout.titleRaw(), resolvers);
         this.inventory = Bukkit.createInventory(this, layout.size(), title);
         populate();
     }
@@ -51,28 +50,35 @@ public final class ProfileMenu implements InventoryHolder {
     private void populate() {
         inventory.clear();
         slotToConfig.clear();
-        var playerTag = Placeholder.unparsed("player", snapshot.username());
+
+        var resolvers = ProfileResolvers.build(snapshot, viewer);
 
         // 1. Configured items (filler, decorations, …)
         for (var cfg : layout.items()) {
             if (!cfg.enabled()) continue;
-            var item = factory.fromConfig(cfg, messages, playerTag);
+            var item = factory.fromConfig(cfg, messages, viewer, resolvers);
             for (int slot : cfg.slots()) {
                 setSlot(slot, item);
                 slotToConfig.put(slot, cfg);
             }
         }
 
-        // 2. Equipment — always overrides items underneath
-        setSlot(layout.headSlot(),                    factory.head(headProfile));
-        setSlot(layout.equipmentSlot("helmet"),       factory.equipment(snapshot.helmet()));
-        setSlot(layout.equipmentSlot("chestplate"),   factory.equipment(snapshot.chestplate()));
-        setSlot(layout.equipmentSlot("leggings"),     factory.equipment(snapshot.leggings()));
-        setSlot(layout.equipmentSlot("boots"),        factory.equipment(snapshot.boots()));
-        setSlot(layout.equipmentSlot("mainHand"),     factory.equipment(snapshot.mainHand()));
-        setSlot(layout.equipmentSlot("offHand"),      factory.equipment(snapshot.offHand()));
+        // 2. Head — configurable via head: section in menu.yml
+        var headCfg  = layout.headConfig();
+        if (!headCfg.slots().isEmpty()) {
+            var headItem = factory.headFromConfig(headCfg, headProfile, messages, viewer, resolvers);
+            setSlot(headCfg.slots().get(0), headItem);
+        }
 
-        // 3. Cosmetics — reuse equipment() for consistent null/clone handling
+        // 3. Equipment — always overrides items underneath
+        setSlot(layout.equipmentSlot("helmet"),     factory.equipment(snapshot.helmet()));
+        setSlot(layout.equipmentSlot("chestplate"), factory.equipment(snapshot.chestplate()));
+        setSlot(layout.equipmentSlot("leggings"),   factory.equipment(snapshot.leggings()));
+        setSlot(layout.equipmentSlot("boots"),      factory.equipment(snapshot.boots()));
+        setSlot(layout.equipmentSlot("mainHand"),   factory.equipment(snapshot.mainHand()));
+        setSlot(layout.equipmentSlot("offHand"),    factory.equipment(snapshot.offHand()));
+
+        // 4. Cosmetics — reuse equipment() for consistent null/clone handling
         for (var entry : snapshot.cosmetics().entrySet()) {
             int slot = layout.cosmeticSlot(entry.getKey());
             setSlot(slot, factory.equipment(entry.getValue()));
@@ -87,8 +93,8 @@ public final class ProfileMenu implements InventoryHolder {
         }
     }
 
-    public void open(Player viewer) {
-        viewer.openInventory(inventory);
+    public void open(Player player) {
+        player.openInventory(inventory);
     }
 
     @Override

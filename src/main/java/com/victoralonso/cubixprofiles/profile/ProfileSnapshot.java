@@ -10,24 +10,25 @@ import java.util.UUID;
 public record ProfileSnapshot(
         UUID uniqueId,
         String username,
+        String prefix,                          // formatted prefix; "" if none
         ItemStack helmet,
         ItemStack chestplate,
         ItemStack leggings,
         ItemStack boots,
         ItemStack mainHand,
         ItemStack offHand,
-        Map<String, ItemStack> cosmetics   // empty if no cosmetics plugin installed
+        Map<String, ItemStack> cosmetics        // empty if no cosmetics plugin installed
 ) {
     /**
-     * Capture equipment + provided cosmetics from a connected player.
-     * Use ProfileService.capture(Player) instead of calling this directly —
-     * it populates cosmetics via the registered CosmeticsManager.
+     * Capture equipment + prefix + cosmetics from a connected player.
+     * Called exclusively by ProfileService.capture(Player).
      */
-    public static ProfileSnapshot of(Player player, Map<String, ItemStack> cosmetics) {
+    public static ProfileSnapshot of(Player player, String prefix, Map<String, ItemStack> cosmetics) {
         var eq = player.getEquipment();
         return new ProfileSnapshot(
                 player.getUniqueId(),
                 player.getName(),
+                prefix != null ? prefix : "",
                 clean(eq.getHelmet()),
                 clean(eq.getChestplate()),
                 clean(eq.getLeggings()),
@@ -38,12 +39,12 @@ public record ProfileSnapshot(
         );
     }
 
-    /** Convenience overload — no cosmetics (used in offline storage hydration). */
+    /** Convenience overload — no prefix, no cosmetics (fallback/testing). */
     public static ProfileSnapshot of(Player player) {
-        return of(player, Map.of());
+        return of(player, "", Map.of());
     }
 
-    /** Normalize empty/AIR ItemStacks to null so storage never serializes an empty stack. */
+    /** Normalize empty/AIR ItemStacks to null so storage never serializes empty stacks. */
     private static ItemStack clean(ItemStack item) {
         return (item == null || item.getType() == Material.AIR || item.isEmpty()) ? null : item;
     }
