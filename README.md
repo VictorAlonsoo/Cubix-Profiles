@@ -1,125 +1,197 @@
 # CubixProfiles
 
-Visor de perfiles de jugador completamente virtual para Paper. Muestra el
-equipamiento (casco, peto, grebas, botas, mano principal, mano secundaria) de
-jugadores online y offline mediante una GUI configurable. Sin estadísticas, sin
-inventario completo, sin sincronización agresiva.
+Visor de perfiles de jugador virtual para Paper. Muestra el equipamiento y los
+cosméticos equipados de jugadores online y offline en una GUI configurable.
+Minimalista por diseño: sin estadísticas, sin inventario completo, sin
+sincronización agresiva.
+
+---
 
 ## Stack
 
-- Paper API 1.21.11 (base de compilación)
-- Java 21
-- Maven
-- groupId `com.victoralonso` · artifactId `cubixprofiles`
-- Compatibilidad runtime: 1.21.4 hasta 26.x mediante detección de capacidades
+| | |
+|---|---|
+| Servidor objetivo | Paper 1.21.4 – 26.x |
+| API de compilación | Paper 1.21.11 |
+| Java | 21 |
+| Build | Maven |
+| groupId | `com.victoralonso` |
+| artifactId | `cubixprofiles` |
 
-## Principios
+Compatibilidad multiversión mediante `CapabilityDetector`: features nuevas
+(`item-model`, `tooltip-style`, `hide-tooltip`) se detectan por reflection al
+arranque. Fallback silencioso si no existen.
 
-- Snapshot minimalista: solo lo que la GUI muestra.
-- Capacidades, no versiones: una detección al arranque, cacheada, inmutable.
-- Sin adapters NMS, sin paquetes por versión, sin reflection constante.
-- `ItemFactory` como núcleo único de construcción de ítems.
-- Storage abstracto e intercambiable.
-- Mensajes por tokens semánticos (MiniMessage + `styles`).
+---
 
-## Arquitectura (base)
+## Comandos y permisos
+
+| Comando | Descripción | Permiso | Default |
+|---|---|---|---|
+| `/profile` | Abre tu propio perfil | `cubixprofiles.profile` | todos |
+| `/profile <jugador>` | Abre el perfil de otro jugador (online u offline) | `cubixprofiles.profile` | todos |
+| `/profile reload` | Recarga config, mensajes y layout del menú | `cubixprofiles.reload` | op |
+
+---
+
+## Ítems del menú — acciones y sonido
+
+Cada ítem declarado en la sección `items:` de `menu.yml` puede tener acciones
+ejecutables al hacer clic y un sonido personalizado.
+
+### Acciones
+
+```yaml
+actions:
+  - "[player]  <command>"   # el viewer ejecuta un comando (sin /)
+  - "[console] <command>"   # la consola ejecuta un comando
+  - "[message] <text>"      # envía texto MiniMessage al viewer
+  - "[close]"               # cierra el inventario
+```
+
+**Placeholders disponibles en acciones:**
+
+| Placeholder | Resuelve a |
+|---|---|
+| `<player>` | username del dueño del perfil |
+| `<viewer>` | username del jugador que hace clic |
+| `%papi%` | cualquier placeholder de PlaceholderAPI, evaluado para el viewer |
+
+### Sonido de clic
+
+Se configura a dos niveles:
+
+- **Global** (`click-sound:` en `menu.yml`): se reproduce en cualquier slot que
+  contenga un ítem. Si `enabled: false`, no se reproduce ningún sonido por defecto.
+- **Por ítem** (`sound:` dentro de cada ítem): sobreescribe el sonido global para
+  ese ítem concreto.
+
+```yaml
+# Global
+click-sound:
+  enabled: true
+  sound: "minecraft:ui.button.click"  # vanilla o resource pack
+  source: MASTER  # MASTER | MUSIC | RECORD | WEATHER | BLOCK | HOSTILE | NEUTRAL | PLAYER | AMBIENT | VOICE
+  volume: 1.0
+  pitch: 1.0
+
+# Por ítem
+items:
+  info:
+    slot: 49
+    material: COMPASS
+    name: "<#FFFFFF>Stats"
+    sound:
+      sound: "minecraft:entity.experience_orb.pickup"
+      source: MASTER
+      volume: 1.0
+      pitch: 1.2
+    actions:
+      - "[player] stats <player>"
+      - "[close]"
+```
+
+El campo `source` controla qué control de volumen del cliente afecta al sonido,
+lo que lo hace compatible con cambios futuros de versión y con resource packs que
+redefinan las categorías.
+
+---
+
+## Integraciones opcionales
+
+### PlaceholderAPI
+Detectado automáticamente al arranque. Registra la expansión `cubixprofiles`.
+
+| Placeholder | Valor |
+|---|---|
+| `%cubixprofiles_helmet%` | Material del casco |
+| `%cubixprofiles_chestplate%` | Material del peto |
+| `%cubixprofiles_leggings%` | Material de las grebas |
+| `%cubixprofiles_boots%` | Material de las botas |
+| `%cubixprofiles_mainhand%` | Material en mano principal |
+| `%cubixprofiles_offhand%` | Material en mano secundaria |
+
+PlaceholderAPI también se resuelve en las acciones de los ítems del menú
+(cualquier `%placeholder%` se evalúa para el jugador que hace clic).
+
+### HMCCosmetics
+Detectado automáticamente si está instalado y `cosmetics.providers.hmccosmetics.enabled: true`.
+- Captura los cosméticos equipados al entrar, al equipar/desquitar y cada `update-interval`.
+- Persiste los cosméticos en la tabla `profile_cosmetics` para mostrarlos en perfiles offline.
+- Los slots se configuran en `cosmetic-slots:` con el prefijo `hmcc_`.
+
+> `paper-plugin.yml` requiere `join-classpath: true` bajo `dependencies.server` para
+> que HMCCosmetics y PlaceholderAPI sean visibles en el classloader del plugin.
+> El listado en `softdepend:` no es suficiente.
+
+---
+
+## Storage
+
+| Backend | Driver | Activación |
+|---|---|---|
+| SQLite | `org.xerial:sqlite-jdbc` | `storage.type: sqlite` (default) |
+| MySQL / MariaDB | `com.mysql:mysql-connector-j` + HikariCP | `storage.type: mysql` |
+
+Los drivers los descarga Paper en runtime (`libraries:` en `paper-plugin.yml`).
+No se incluyen en el jar.
+
+**Tablas:**
+- `profiles` — snapshot de equipamiento por UUID + username.
+- `profile_cosmetics` — cosmético por UUID + slot (`PRIMARY KEY (uuid, slot)`).
+  Extensible sin `ALTER TABLE` al añadir nuevos proveedores.
+
+Serialización: `ItemStack.serializeAsBytes()` / `deserializeBytes()` almacenado como `BLOB`.
+
+---
+
+## Arquitectura
 
 ```
 com.victoralonso.cubixprofiles
-├── CubixProfiles                main
+├── CubixProfiles                   main — wiring de todos los managers
 ├── command/
-│   └── ProfileCommand
-├── profile/
-│   ├── ProfileService           cache + orquestación storage
-│   ├── ProfileSnapshot          record
-│   ├── ProfileListener          join/quit/kick -> capturar snapshot
-│   └── storage/
-│       ├── StorageManager       interfaz
-│       └── YamlStorage          primer backend
-├── menu/
-│   ├── ProfileMenu              holder + render, virtual inventory
-│   ├── ItemFactory              núcleo: snapshot + config -> ItemStack
-│   └── MenuLayout               lee menu.yml: title, size, slots
+│   └── ProfileCommand              /profile [player] | reload
+├── config/
+│   └── ConfigManager               acceso tipado a config.yml
 ├── compatibility/
-│   └── CapabilityDetector       item-model, tooltip-style, hide-tooltip
+│   └── CapabilityDetector          reflection al arranque — item-model, tooltip-style, hide-tooltip
+├── cosmetics/
+│   ├── CosmeticsProvider           interfaz — un proveedor por plugin externo
+│   ├── CosmeticsManager            registry + captureAll(Player)
+│   └── hmccosmetics/
+│       ├── HMCCosmeticsProvider    impl con HMCCosmetics API
+│       └── HMCCosmeticsListener    equip/unequip → profileService.capture()
+├── menu/
+│   ├── ProfileMenu                 InventoryHolder virtual + slotToConfig map
+│   ├── ItemFactory                 núcleo único de construcción de ItemStack
+│   ├── MenuLayout                  parsea menu.yml: title, size, slots, sonido global, ítems
+│   ├── MenuItemConfig              record — material, slots, nombre, lore, acciones, sonido
+│   ├── SoundConfig                 record — key, source, volume, pitch → Adventure Sound
+│   ├── ActionExecutor              ejecuta acciones [player]/[console]/[message]/[close]
+│   └── MenuListener                cancela interacción, reproduce sonido, ejecuta acciones
 ├── message/
-│   └── MessageService           MiniMessage + styles TagResolver
-└── config/
-    └── ConfigManager
+│   └── MessageService              MiniMessage + multi-idioma + locale del jugador
+├── placeholder/
+│   └── CubixPlaceholderExpansion   integración PlaceholderAPI
+└── profile/
+    ├── ProfileSnapshot             record — uuid, username, 6 slots + cosmetics map
+    ├── ProfileService              cache (ConcurrentHashMap) + orquestación storage
+    ├── ProfileListener             join → capture, quit → saveAsync
+    └── storage/
+        ├── StorageManager          interfaz
+        ├── SQLiteStorage           backend SQLite
+        └── MySQLStorage            backend MySQL / MariaDB + HikariCP
 ```
 
-## PlayerProfile vs ProfileSnapshot
+### Decisiones de diseño
 
-- `PlayerProfile` (`org.bukkit.profile.PlayerProfile`) = identidad + skin. Es la
-  cabeza del GUI. Resoluble async para offline vía `update()`.
-- `ProfileSnapshot` = equipamiento persistido en storage.
-- Complementarios: la skin se resuelve en render (cacheable); el equipamiento
-  sale del snapshot guardado. `PlayerProfile` no entra en el record.
-
-```java
-public record ProfileSnapshot(
-        UUID uniqueId,
-        String username,      // cache denormalizada para lectura offline sin Mojang
-        ItemStack helmet,
-        ItemStack chestplate,
-        ItemStack leggings,
-        ItemStack boots,
-        ItemStack mainHand,
-        ItemStack offHand
-) {}
-```
-
-## Compatibilidad multiversión
-
-- Compila contra 1.21.11 con `<maven.compiler.release>21</maven.compiler.release>`.
-- El jar corre sin recompilar en servidores 26.x: Java es retrocompatible y Paper
-  mantiene estabilidad de API. El requisito de Java 25 es del servidor en runtime,
-  no de tu compilación.
-- Features nuevas (item-model, tooltip-style, hide-tooltip) se detectan en
-  `CapabilityDetector` por reflection una sola vez al arranque. Fallback silencioso
-  si no existen.
-- No compilar contra la API 26.1 salvo necesidad real de símbolos exclusivos de esa
-  versión; en ese caso, detectarlos por reflection en vez de fijar el target.
-
-## Serialización de ítems
-
-- `ItemStack.serializeAsBytes()` / `ItemStack.deserializeBytes(byte[])`.
-- Maneja data components correctamente entre versiones. Mejor que `serialize()` de
-  mapa para ítems modernos.
-- En `YamlStorage`, los bytes se guardan en Base64.
-
-## Roadmap
-
-### Fase 0 — Scaffolding
-`pom.xml`, `paper-plugin.yml`, `CubixProfiles`, `MessageService`,
-`messages_en.yml`, `config.yml`. El plugin carga y registra `/profile`.
-
-### Fase 1 — Snapshot + Storage
-`ProfileSnapshot`, `StorageManager`, `YamlStorage`, serialización de `ItemStack`,
-`ProfileListener` (join/quit/kick), `ProfileService` con `ConcurrentHashMap`.
-
-### Fase 2 — GUI
-`menu.yml` (title/size/slots), `MenuLayout`, `ProfileMenu` (virtual inventory
-holder), `ItemFactory`, `ProfileCommand` `/profile [player]`. `CapabilityDetector`
-aplicado en `ItemFactory`.
-
-### Fase 3 — Offline
-Resolución de UUID/username y skin vía `PlayerProfile.update()` async. Lectura de
-snapshot desde storage para jugadores no conectados.
-
-### Fase 4+ — Extensiones (no ahora)
-`ItemDecorator` pipeline · `CustomItemProvider` registry (ItemsAdder/Nexo/
-CraftEngine) · PlaceholderAPI · backends H2/MySQL/MariaDB · multi-idioma · refresh
-configurable.
-
-## Build
-
-```
-mvn clean install
-```
-
-Salida: `target/cubixprofiles-<version>.jar`
-
-## Estado actual
-
-Fase 0 pendiente.
+- `ProfileSnapshot.of(Player)` no accede a cosméticos. Usar siempre
+  `profileService.capture(player)` para snapshots completos.
+- `PlayerProfile` (skin) no entra en el record. Se resuelve en render, async si es offline.
+- El GUI es estático: se construye una vez al abrir. El refresh es manual
+  (`/profile`) o por `update-interval`, nunca por tick.
+- Los sonidos se reproducen solo si el slot contiene un ítem real (no slots vacíos).
+- Acciones de tipo `[player]` y `[console]` se despachan en el siguiente tick para
+  evitar conflictos con el estado del inventario dentro del evento cancelado.
+- `CosmeticsProvider` permite añadir futuros plugins sin tocar el código base.

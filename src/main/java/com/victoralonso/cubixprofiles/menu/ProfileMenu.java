@@ -10,6 +10,11 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public final class ProfileMenu implements InventoryHolder {
 
@@ -19,6 +24,10 @@ public final class ProfileMenu implements InventoryHolder {
     private final MessageService messages;
     private final PlayerProfile headProfile;
     private final ProfileSnapshot snapshot;
+
+    // Maps slot index → MenuItemConfig for items declared in the items: section.
+    // Used by MenuListener to resolve per-item sounds and actions.
+    private final Map<Integer, MenuItemConfig> slotToConfig = new HashMap<>();
 
     public ProfileMenu(ProfileSnapshot snapshot, MenuLayout layout,
                        ItemFactory factory, MessageService messages,
@@ -41,6 +50,7 @@ public final class ProfileMenu implements InventoryHolder {
 
     private void populate() {
         inventory.clear();
+        slotToConfig.clear();
         var playerTag = Placeholder.unparsed("player", snapshot.username());
 
         // 1. Configured items (filler, decorations, …)
@@ -49,6 +59,7 @@ public final class ProfileMenu implements InventoryHolder {
             var item = factory.fromConfig(cfg, messages, playerTag);
             for (int slot : cfg.slots()) {
                 setSlot(slot, item);
+                slotToConfig.put(slot, cfg);
             }
         }
 
@@ -83,5 +94,26 @@ public final class ProfileMenu implements InventoryHolder {
     @Override
     public @NotNull Inventory getInventory() {
         return inventory;
+    }
+
+    // ---- accessors for MenuListener ----
+
+    public ProfileSnapshot snapshot() { return snapshot; }
+
+    /** Per-item sound override for this slot, or null if not configured. */
+    public @Nullable SoundConfig soundForSlot(int slot) {
+        var cfg = slotToConfig.get(slot);
+        return cfg != null ? cfg.sound() : null;
+    }
+
+    /** Actions declared for this slot, or an empty list if none. */
+    public List<String> actionsForSlot(int slot) {
+        var cfg = slotToConfig.get(slot);
+        return cfg != null ? cfg.actions() : List.of();
+    }
+
+    /** Global click sound from the layout, or null if disabled. */
+    public @Nullable SoundConfig globalClickSound() {
+        return layout.globalClickSound();
     }
 }

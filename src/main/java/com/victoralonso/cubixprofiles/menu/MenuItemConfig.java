@@ -1,12 +1,13 @@
 package com.victoralonso.cubixprofiles.menu;
 
 import org.bukkit.Material;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 /**
  * Immutable snapshot of a single item entry from the items: section of menu.yml.
- * Null fields mean "not configured" — the item factory will skip that property.
+ * Null fields mean "not configured" — ItemFactory / ActionExecutor will skip them.
  */
 public record MenuItemConfig(
         String id,
@@ -18,5 +19,7 @@ public record MenuItemConfig(
         int customModelData,    // 0 = not set
         String itemModel,       // null = not set
         String tooltipStyle,    // null = not set
-        boolean hideTooltip
+        boolean hideTooltip,
+        List<String> actions,   // action strings; empty = no actions
+        @Nullable SoundConfig sound  // null = inherit global click-sound
 ) {}

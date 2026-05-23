@@ -4,6 +4,23 @@ size: 54
 # Slot for the player's head (skin display). Not equipment, not cosmetic.
 head-slot: 4
 
+# ──────────────────────────────────────────────
+#  Global click sound.
+#  Played whenever a player clicks a slot that contains an item.
+#  Per-item sound (see items: section) overrides this value.
+#
+#  sound:  vanilla key  →  "minecraft:ui.button.click"
+#          resource-pack key  →  "myrp:ui.menu.click"
+#  source: which volume slider controls this sound in the client's options.
+#          MASTER | MUSIC | RECORD | WEATHER | BLOCK | HOSTILE | NEUTRAL | PLAYER | AMBIENT | VOICE
+# ──────────────────────────────────────────────
+click-sound:
+  enabled: true
+  sound: "minecraft:ui.button.click"
+  source: MASTER
+  volume: 1.0
+  pitch: 1.0
+
 # Positions for the Minecraft equipment items.
 equipment-slots:
   helmet:     13
@@ -41,7 +58,22 @@ cosmetic-slots:
 #    tooltip-style:    "namespace:path"
 #    hide-tooltip:     true | false  (default: false)
 #
-#  Placeholder available in name/lore: <player>
+#  Actions (executed on click):
+#    actions:
+#      - "[player]  <command>"   — viewer runs a command (no slash)
+#      - "[console] <command>"   — console runs a command
+#      - "[message] <text>"      — sends a MiniMessage message to the viewer
+#      - "[close]"               — closes the inventory
+#    Placeholders in actions: <player> (profile owner), <viewer> (clicker), %papi% (PlaceholderAPI)
+#
+#  Per-item sound (overrides click-sound for this item only):
+#    sound:
+#      sound:  "namespace:key"
+#      source: MASTER
+#      volume: 1.0
+#      pitch:  1.0
+#
+#  Placeholder available in name/lore/actions: <player>
 # ──────────────────────────────────────────────
 items:
 
@@ -55,16 +87,27 @@ items:
     # item-model: "minecraft:item/gray_stained_glass_pane"
     # tooltip-style: "minecraft:default"
     # hide-tooltip: false
+    # actions: []
+    # sound:
+    #   sound: "minecraft:ui.button.click"
+    #   source: MASTER
+    #   volume: 1.0
+    #   pitch: 1.0
 
-  # ── Example custom item — uncomment to activate ──
+  # ── Example item with actions and custom sound — uncomment to activate ──
   # info:
   #   enabled: true
   #   slot: 49
-  #   material: APPLE
+  #   material: PLAYER_HEAD
   #   name: "<bold><#FFFFFF><player>"
   #   lore:
-  #     - "<#A5ACB8>Profile Viewer"
-  #   # custom-model-data: 1000
-  #   # item-model: "cubixprofiles:player_info"
-  #   # tooltip-style: "minecraft:default"
-  #   # hide-tooltip: false
+  #     - "<#A5ACB8>Click to view <player>'s stats."
+  #   actions:
+  #     - "[player] stats <player>"
+  #     - "[message] <#A5ACB8>Opening stats for <#5AB0FF><player><#A5ACB8>..."
+  #     - "[close]"
+  #   sound:
+  #     sound: "minecraft:entity.experience_orb.pickup"
+  #     source: MASTER
+  #     volume: 1.0
+  #     pitch: 1.2

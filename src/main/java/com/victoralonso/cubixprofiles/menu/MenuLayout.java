@@ -1,9 +1,11 @@
 package com.victoralonso.cubixprofiles.menu;
 
+import net.kyori.adventure.sound.Sound;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -19,6 +21,7 @@ public final class MenuLayout {
     private final Map<String, Integer> equipmentSlots = new HashMap<>();
     private final Map<String, Integer> cosmeticSlots  = new HashMap<>();
     private final List<MenuItemConfig> items = new ArrayList<>();
+    private final @Nullable SoundConfig globalClickSound;
 
     public MenuLayout(JavaPlugin plugin) {
         var file = new File(plugin.getDataFolder(), "menu.yml");
@@ -31,6 +34,8 @@ public final class MenuLayout {
 
         loadSlotMap(cfg.getConfigurationSection("equipment-slots"), equipmentSlots);
         loadSlotMap(cfg.getConfigurationSection("cosmetic-slots"),  cosmeticSlots);
+
+        globalClickSound = parseSoundConfig(cfg.getConfigurationSection("click-sound"), true);
 
         var itemsSection = cfg.getConfigurationSection("items");
         if (itemsSection != null) {
@@ -70,7 +75,9 @@ public final class MenuLayout {
                 sec.getInt("custom-model-data", 0),
                 sec.getString("item-model", null),
                 sec.getString("tooltip-style", null),
-                sec.getBoolean("hide-tooltip", false)
+                sec.getBoolean("hide-tooltip", false),
+                sec.getStringList("actions"),
+                parseSoundConfig(sec.getConfigurationSection("sound"), false)
         );
     }
 
@@ -109,6 +116,30 @@ public final class MenuLayout {
         return result;
     }
 
+    // ---- sound config parsing ----
+
+    /**
+     * Parses a sound configuration section.
+     * @param sec      the YAML section to parse, or null
+     * @param checkEnabled when true the section must have enabled: true (default) to return non-null
+     */
+    private static @Nullable SoundConfig parseSoundConfig(@Nullable ConfigurationSection sec,
+                                                           boolean checkEnabled) {
+        if (sec == null) return null;
+        if (checkEnabled && !sec.getBoolean("enabled", true)) return null;
+
+        String key = sec.getString("sound", "minecraft:ui.button.click");
+
+        Sound.Source source = Sound.Source.MASTER;
+        try {
+            source = Sound.Source.valueOf(sec.getString("source", "MASTER").toUpperCase());
+        } catch (IllegalArgumentException ignored) {}
+
+        float volume = (float) sec.getDouble("volume", 1.0);
+        float pitch  = (float) sec.getDouble("pitch",  1.0);
+        return new SoundConfig(key, source, volume, pitch);
+    }
+
     // ---- getters ----
 
     public String titleRaw()            { return titleRaw; }
@@ -122,4 +153,7 @@ public final class MenuLayout {
     public int cosmeticSlot(String key) { return cosmeticSlots.getOrDefault(key, -1); }
 
     public List<MenuItemConfig> items() { return items; }
+
+    /** Global click sound, or null if disabled / not configured. */
+    public @Nullable SoundConfig globalClickSound() { return globalClickSound; }
 }

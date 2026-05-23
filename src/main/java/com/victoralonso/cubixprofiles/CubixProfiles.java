@@ -65,7 +65,7 @@ public final class CubixProfiles extends JavaPlugin {
         caps        = new CapabilityDetector();
         menuLayout  = new MenuLayout(this);
         itemFactory = new ItemFactory(caps);
-        getServer().getPluginManager().registerEvents(new MenuListener(), this);
+        getServer().getPluginManager().registerEvents(new MenuListener(this), this);
 
         // Command — registered once; reads live config via plugin getters on each call
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event ->
