@@ -1,0 +1,7 @@
+plugin-enabled:    "<#83CA16>CubixProfiles enabled."
+plugin-disabled:   "<#A5ACB8>CubixProfiles disabled."
+no-permission:     "<#D92625>You don't have permission to use this command."
+no-console:        "<#D92625>This command can only be used by players."
+player-not-found:  "<#D92625>Player <#5AB0FF><player><#D92625> not found."
+profile-loading:   "<#A5ACB8>Loading profile for <#5AB0FF><player><#A5ACB8>..."
+config-reloaded:   "<#83CA16>Configuration reloaded successfully."

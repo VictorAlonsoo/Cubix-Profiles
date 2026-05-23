@@ -1,0 +1,35 @@
+language: en
+
+storage:
+  # Available backends: sqlite | mysql
+  type: sqlite
+
+  mysql:
+    host: localhost
+    port: 3306
+    database: cubixprofiles
+    username: root
+    password: ""
+    # Maximum simultaneous connections in the pool
+    pool-size: 5
+
+cosmetics:
+  providers:
+    hmccosmetics:
+      enabled: true
+      # HMCCosmetics slots to capture and display.
+      # Keys map to cosmetic-slots in menu.yml using the prefix "hmcc_".
+      slots:
+        - HELMET
+        - CHESTPLATE
+        - LEGGINGS
+        - BOOTS
+        - MAINHAND
+        - OFFHAND
+        - BACKPACK
+        - BALLOON
+
+# Ticks between automatic snapshot refresh for online players.
+# 20 ticks = 1 second. Set to 0 to disable.
+# Recommended: 200 (10 s) – 600 (30 s).
+update-interval: 300

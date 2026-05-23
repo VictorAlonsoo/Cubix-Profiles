@@ -1,0 +1,33 @@
+name: CubixProfiles
+version: '${project.version}'
+main: com.victoralonso.cubixprofiles.CubixProfiles
+api-version: '1.21'
+authors:
+  - victoralonso
+description: Visor de perfiles virtual para Paper.
+
+# join-classpath: true is required for paper-plugin.yml classloader isolation.
+# Without it, classes from soft-depended plugins are not visible at runtime.
+dependencies:
+  server:
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    HMCCosmetics:
+      load: BEFORE
+      required: false
+      join-classpath: true
+
+libraries:
+  - "org.xerial:sqlite-jdbc:3.49.1.0"
+  - "com.zaxxer:HikariCP:5.1.0"
+  - "com.mysql:mysql-connector-j:9.2.0"
+
+permissions:
+  cubixprofiles.profile:
+    description: Allows use of /profile.
+    default: true
+  cubixprofiles.reload:
+    description: Allows use of /profile reload.
+    default: op
